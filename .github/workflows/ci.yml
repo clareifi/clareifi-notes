@@ -1,0 +1,56 @@
+# CI pipeline — placeholder for Phase 2
+# Will add: lint, type-check, unit tests (Vitest), e2e tests (Playwright)
+#
+# Uncomment and expand when the SvelteKit scaffold is in place.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Placeholder ──────────────────────────────────────────────
+  placeholder:
+    name: CI placeholder (Phase 1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Node setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm ci || echo "No package-lock.json yet — skipping install"
+      - name: Echo status
+        run: echo "CI pipeline active. Full checks coming in Phase 2."
+
+  # ── Future jobs (uncomment in Phase 2) ───────────────────────
+  # lint:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with: { node-version: 20 }
+  #     - run: npm ci
+  #     - run: npm run lint
+  #
+  # type-check:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with: { node-version: 20 }
+  #     - run: npm ci
+  #     - run: npm run check
+  #
+  # test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with: { node-version: 20 }
+  #     - run: npm ci
+  #     - run: npm run test
