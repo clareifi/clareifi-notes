@@ -1,0 +1,63 @@
+# ── Dependencies ──────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+
+# ── SvelteKit build outputs ───────────────────────────────────
+.svelte-kit/
+build/
+dist/
+.vercel/
+
+# ── Environment variables (NEVER commit secrets) ──────────────
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ── IDE ───────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ── OS ────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ── Logs ──────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Testing ───────────────────────────────────────────────────
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# ── Obsidian dev journal (keep separate from codebase) ────────
+Clareifi-Notes-Dev/
+
+# ── Supabase local dev ────────────────────────────────────────
+supabase/.branches/
+supabase/.temp/
+
+# ── Misc ──────────────────────────────────────────────────────
+tmp/
+temp/
+*.tmp
+*.bak
