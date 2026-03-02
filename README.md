@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](docs/CONTRIBUTING.md)
-[![Built in Public](https://img.shields.io/badge/Built%20in-Public-blue)](https://bsky.app/profile/clareifi.com)
+[![Built in Public](https://img.shields.io/badge/Built%20in%20Public-blue)](https://bsky.app/profile/clareifi.com)
 
 ## What is Clareifi Notes?
 
@@ -14,107 +14,62 @@ Clareifi Notes is an end-to-end encrypted knowledge management platform that com
 
 **Core Principles:**
 - 🔐 **Privacy by default** — End-to-end encryption for your personal vault
-- 🌐 **Selectively public** — Share what you want via encrypted links
-- 📱 **Local-first** — Works offline, syncs when you want
-- 🎯 **Built with AI** — Developed using AI-assisted tools to demonstrate modern development workflows
-
-## Why This Exists
-
-This project serves three purposes:
-
-1. **Learning Project** — Master E2EE implementation with AI-assisted development
-2. **Portfolio Piece** — Demonstrate secure architecture patterns for consulting clients
-3. **Product Vision** — Build a privacy-first alternative to existing knowledge management tools
-
-Part of [The Clareifi Collective](https://clareifi.com) — AI ethics and policy consulting.
-
-## Current Status: Phase 1 (Learning)
-
-🚧 **In active development** — Follow along as I build in public
-
-**Phase 1 Goals (Months 1–3):**
-- ✅ Repository setup and architecture planning
-- ⬜ Weekend prototype: encrypted textarea with password-derived keys
-- ⬜ Basic note creation/editing with client-side encryption
-- ⬜ Local storage with IndexedDB
-- ⬜ Authentication flow
-- ⬜ Daily personal use achieved
-
-See [docs/ROADMAP.md](docs/ROADMAP.md) for the complete three-phase plan.
-
-## Features (Planned)
-
-### Phase 1 — Core Encryption
-- End-to-end encrypted notes
-- Password-derived key management
-- Local-first storage
-- Basic markdown editor
-
-### Phase 2 — Sharing & Content Types
-- Public profile pages
-- Encrypted link-based sharing
-- Code snippets and clipped articles
-- Cross-device sync
-
-### Phase 3 — Production SaaS
-- Photo/media storage
-- RSS feed aggregation
-- Team collaboration
-- Mobile apps
-- Self-hosted option
+- 🏠 **Local-first** — Your data lives on your device, syncs on your terms
+- 🕶️ **Zero-knowledge** — The server holds encrypted blobs it cannot open
+- 🤖 **On-device AI** — Search and summarise locally; nothing leaves your machine
+- ✊ **Your consent, your rules** — Selective sharing via ephemeral encrypted links
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | SvelteKit |
-| Encryption | libsodium.js |
-| Backend / Auth | Supabase |
-| Deployment | Vercel |
-| Sync (Phase 2) | Automerge / Yjs |
-| Editor | Tiptap / CodeMirror |
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| Frontend | SvelteKit + TypeScript | Reactive UI, type-safe throughout |
+| Encryption | Web Crypto API (AES-GCM) | Native browser crypto, zero dependencies |
+| Local Storage | IndexedDB (idb-keyval) | High-performance local-first storage |
+| Sync | Yjs / Automerge (CRDT) | Conflict-free multi-device sync |
+| Backend | Supabase | Blind relay — stores encrypted blobs only |
+| Deployment | Vercel | Edge-optimised hosting |
+| On-device AI | Transformers.js | Local LLM for search/summarise |
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed technical decisions.
+## Security Architecture
 
-## Security
+Notes are encrypted on your device using **AES-GCM** via the native **Web Crypto API** before leaving your machine. Your password derives a local key via a key-derivation function — the server never holds your credentials or your keys.
 
-Security is the foundation of this project. Every security decision is documented and an external audit is planned before any production launch.
+The server is structurally incapable of reading your content. Not by policy — by architecture.
 
-- **Threat model:** [docs/SECURITY.md](docs/SECURITY.md)
-- **Security issues:** Report responsibly via security@clareifi.com
-- **Crypto policy:** Industry-standard libsodium.js — no roll-your-own crypto
+> *"A platform that guarantees their most sensitive work can never be accessed, leaked, or scraped by an LLM-training server without their explicit, encrypted consent."*
+
+Full security documentation: [docs/SECURITY.md](docs/SECURITY.md)
+
+## Project Status
+
+| Phase | Focus | Status |
+|-------|-------|--------|
+| Phase 1 (Months 1–3) | Foundation — local encryption, key-derived auth, IndexedDB vault | 🟢 In progress |
+| Phase 2 (Months 4–8) | Sync layer, open source portfolio, working product | ⬜ Upcoming |
+| Phase 3 (Months 9–12) | SaaS launch, encrypted sharing, sustainable indie business | ⬜ Upcoming |
+
+See the full roadmap: [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ## Building in Public
 
-Follow the development journey:
-- 🦋 [Bluesky](https://bsky.app/profile/clareifi.com)
-- 🧵 [Threads](https://threads.net/@clareifi)
-- 🐦 [X / Twitter](https://x.com/clareifi)
-- 📝 [Blog](https://clareifi.com)
+Follow the build as it happens:
 
-Weekly dev logs published every Friday.
-
-## Contributing
-
-This is primarily a learning project during Phase 1, but contributions are welcome:
-- 🐛 Bug reports
-- 💡 Feature suggestions
-- 🔒 Security feedback
-- 📖 Documentation improvements
-
-See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
+- 🦋 Bluesky: [@clareifi.com](https://bsky.app/profile/clareifi.com)
+- 🧵 Threads: [@clareifi.com](https://www.threads.net/@clareifi.com)
+- 🐦 X: [@clareifi](https://x.com/clareifi)
+- 🌐 Blog: [clareifi.com](https://www.clareifi.com)
 
 ## About the Builder
 
-I'm Euri, founder of [Clareifi AI](https://clareifi.com) — AI ethics and policy consulting for law firms and SMBs. This project demonstrates the practical implementation challenges I help clients navigate.
+Built by [Euri](https://github.com/clareifi) — working at the intersection of privacy, knowledge management, and independent software development.
 
-- 🌐 [clareifi.com](https://clareifi.com)
-- 🦋 [@clareifi.com](https://bsky.app/profile/clareifi.com) on Bluesky
+*Building things worth keeping. Documenting things worth remembering. Leaving things better than I found them.*
+
+## Contributing
+
+See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md). Security issues: security@clareifi.com
 
 ## License
 
-MIT © 2025 Clareifi — See [LICENSE](LICENSE) for details.
-
----
-
-*"Build things worth keeping. Document things worth remembering. Leave things better than you found them."*
+MIT — see [LICENSE](LICENSE)
