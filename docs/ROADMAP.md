@@ -2,7 +2,7 @@
 
 > This roadmap reflects current thinking and will evolve as the build progresses. All decisions are documented in GitHub as they're made.
 
-## Current Phase: Phase 1 — Week 1
+## Current Phase: Phase 2 — Month 2
 
 ---
 
@@ -12,7 +12,7 @@
 
 ---
 
-### Month 1: The Secure Bunker — Foundation
+### ✅ Month 1: The Secure Bunker — Foundation `COMPLETE`
 
 **Focus: Data integrity and local encryption.**
 
@@ -20,11 +20,13 @@ The bunker exists before anything else. Encryption is not a feature added at the
 
 **Deliverables:**
 
-- **Vault Structure** — Implement the core file system architecture using `IndexedDB` for high-performance, local-only storage
-- **Cryptography Implementation** — Integrate the **Web Crypto API** with **AES-GCM** encryption. All notes are encrypted on-device before touching any disk (local or cloud)
-- **Identity Management** — Build the local-first login flow using a "Key-Derived" authentication system: your password unlocks a local key; the server never holds your credentials
+- ✅ **Vault Structure** — IndexedDB local-only storage via `idb-keyval`. Encrypted blobs stored natively — no serialisation needed
+- ✅ **Cryptography Implementation** — Web Crypto API with AES-GCM 256-bit. PBKDF2 key derivation (310,000 iterations, SHA-256). All notes encrypted on-device before storage
+- ✅ **Identity Management** — Local-first vault auth flow: password derives a non-extractable `CryptoKey` and a separate verification hash. The master key never leaves memory and is never persisted
 
-**What this phase proves:** The encryption layer is the foundation, not an afterthought.
+**What this phase proved:** The encryption layer is the foundation, not an afterthought. DevTools → IndexedDB shows only encrypted blobs — no plaintext, no keys, nothing readable.
+
+**Working prototype:** SvelteKit 2 + Svelte 5 (runes) · Web Crypto API · idb-keyval · Tailwind CSS 4
 
 ---
 
@@ -62,11 +64,11 @@ The server is an "encrypted postman." It stores and moves binary blobs. It has n
 
 *Timed to the roadmap. The goal is to show the work under the hood — not just the product.*
 
-| Weeks | What to Share |
-|-------|---------------|
-| 1–4 | The "Encryption First" decision — why Web Crypto API, why AES-GCM, what zero-knowledge means in practice |
-| 5–8 | The "Blind Sync" architecture — visualise how the server sees only encrypted blobs, never content |
-| 9–12 | The first successful "Public Share" of an encrypted note — demonstrating that even the developer cannot read what is being shared |
+| Weeks | What to Share | Status |
+|-------|---------------|--------|
+| 1–4 | The "Encryption First" decision — why Web Crypto API, why AES-GCM, what zero-knowledge means in practice | ✅ Done |
+| 5–8 | The "Blind Sync" architecture — visualise how the server sees only encrypted blobs, never content | In progress |
+| 9–12 | The first successful "Public Share" of an encrypted note — demonstrating that even the developer cannot read what is being shared | Upcoming |
 
 **Platforms:** Bluesky, Threads, X, Blog (clareifi.com), Paragraph (Dev Stack updates)
 
@@ -97,7 +99,7 @@ The server is an "encrypted postman." It stores and moves binary blobs. It has n
 **Pricing direction (subject to change):**
 
 | Tier | Price | Includes |
-|------|-------|---------|
+|------|-------|---------| 
 | Free | $0 | Local vault, single device |
 | Personal | $5–8/mo | Multi-device sync, encrypted sharing |
 | Professional | $15–20/mo | Team features, priority support |
@@ -109,10 +111,10 @@ The server is an "encrypted postman." It stores and moves binary blobs. It has n
 
 | Phase | Metric | Target |
 |-------|--------|--------|
-| Phase 1 | Working local vault with E2EE | ✅ Functional prototype |
+| Phase 1 | Working local vault with E2EE | ✅ Complete — prototype confirmed working |
 | Phase 2 | Syncing across 2+ devices | No plaintext ever on server |
 | Phase 3 | Paying customers | Sustainable without VC |
 
 ---
 
-*Last updated: March 2026 — Phase 1, Week 1*
+*Last updated: March 2026 — Phase 1 complete, entering Month 2*
