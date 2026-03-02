@@ -1,135 +1,110 @@
 # Security Policy
 
-## ⚠️ Current Status: Phase 1 — Learning Project
+## Our Commitment
 
-This is an active learning project and is **not yet suitable for sensitive or production data**. Security features are being implemented incrementally. See the roadmap for planned security milestones.
+Clareifi Notes is built on a zero-knowledge architecture. The security guarantee is architectural, not a policy promise: the server is structurally incapable of reading user content. No keys, no plaintext, ever.
 
-**Do not use for:**
-- Production or business-critical data
-- Highly sensitive personal information
-- Any data where loss would be unacceptable (no password recovery yet)
+> *"A platform that guarantees their most sensitive work can never be accessed, leaked, or scraped by an LLM-training server without their explicit, encrypted consent."*
+
+We take security reports seriously and will respond promptly.
 
 ---
 
 ## Reporting a Vulnerability
 
-**Please do not open public GitHub issues for security vulnerabilities.**
+**Do not open a public GitHub issue for security vulnerabilities.**
 
-Email: **security@clareifi.com**
+Please report security issues to: **security@clareifi.com**
 
-Include:
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact assessment
-- Suggested fix (if any)
+**Response commitment:**
+- Acknowledgement within **48 hours**
+- Status update within **7 days**
+- Fix timeline communicated before public disclosure
 
-Response commitment: **48 hours** for acknowledgement, **7 days** for initial assessment.
-
----
-
-## Security Principles
-
-| Principle | Implementation |
-|-----------|---------------|
-| Zero-knowledge architecture | Server stores only encrypted blobs it cannot read |
-| Client-side encryption only | All crypto operations happen in the browser |
-| No custom cryptography | Industry-standard libsodium.js exclusively |
-| Transparency | All security decisions documented publicly |
-| External audits | Review planned before any production launch |
+We practise responsible disclosure and will work with reporters to coordinate timing. Credit is given to reporters who follow responsible disclosure.
 
 ---
 
-## Cryptographic Details
+## Cryptographic Primitives
 
-### Algorithms in Use
-| Operation | Algorithm | Library |
-|-----------|-----------|---------|
-| Symmetric encryption | XSalsa20-Poly1305 | libsodium.js |
-| Key derivation | Argon2id | libsodium.js |
-| Random generation | CSPRNG via `randombytes_buf` | libsodium.js |
+| Function | Algorithm | Implementation |
+|----------|-----------|---------------|
+| Symmetric encryption | **AES-GCM** (256-bit key) | Web Crypto API (native browser) |
+| Key derivation | **PBKDF2** | Web Crypto API (native browser) |
+| Random number generation | CSPRNG | `crypto.getRandomValues()` |
+| Future (Phase 2+) | Argon2id | Via WebAssembly |
 
-### Why libsodium?
-- Formally audited by multiple security firms
-- Designed to be misuse-resistant
-- WebAssembly build provides near-native performance
-- Widely used in production E2EE systems
-
-### Key Management
-- Master key is derived from the user's password using Argon2id
-- Master key exists **in memory only** during an active session
-- Master key is **never transmitted** to any server
-- Each note is encrypted with a unique nonce (never reused)
-- Share link keys are cryptographically independent from the master key
+**Why Web Crypto API?** Native browser cryptography with zero external dependencies. The implementation is maintained by browser vendors, is subject to constant scrutiny, and does not introduce supply-chain risk from third-party libraries.
 
 ---
 
-## Known Limitations (Phase 1)
+## Key Security Properties
+
+### Zero-Knowledge Architecture
+The server holds only encrypted ciphertext. It has no keys and no capability to decrypt. A server breach exposes only binary blobs that are meaningless without the user's local key.
+
+### Local Key Derivation
+User passwords are never transmitted. PBKDF2 derives two values locally:
+1. An auth hash (sent to Supabase for authentication only)
+2. A master encryption key (stays on-device, never transmitted)
+
+### Nonce Uniqueness
+Every encryption operation uses a cryptographically random nonce. Nonce reuse — which would compromise AES-GCM security — is prevented by construction.
+
+### On-Device AI
+The Transformers.js integration performs all AI operations locally. No note content is ever transmitted to an AI service or external API for any reason.
+
+---
+
+## Known Limitations
 
 | Limitation | Status | Planned Resolution |
-|------------|--------|-------------------|
-| No password recovery | Known | Key backup with recovery phrase (Phase 2) |
-| No security audit | Pending | External audit before Phase 3 launch |
-| No penetration testing | Pending | Phase 2 |
-| No rate limiting | Pending | Phase 2 |
-| No breach detection | Pending | Phase 3 |
-| No formal incident response | Pending | Phase 3 |
+|-----------|--------|--------------------|
+| PBKDF2 vs Argon2id | PBKDF2 is less memory-hard than Argon2id | Phase 2: upgrade to Argon2id via WASM |
+| No forward secrecy at rest | Key rotation not yet implemented | Phase 2 |
+| Metadata visible to server | Note IDs and timestamps are unencrypted | Phase 3: metadata minimisation |
+| Single master key | Per-note keys not yet implemented | Phase 3 |
 
 ---
 
 ## Security Roadmap
 
-### Phase 1 (Current)
-- [x] Client-side encryption with libsodium.js
-- [x] Argon2id key derivation
-- [x] Security architecture documentation
-- [ ] Content Security Policy (CSP) headers
-- [ ] Subresource Integrity (SRI) for all CDN assets
-- [ ] Automated dependency vulnerability scanning (Dependabot)
-- [ ] Password strength enforcement (zxcvbn)
-
-### Phase 2
-- [ ] External security audit
-- [ ] Penetration testing
-- [ ] Key rotation / password change without full re-encryption
-- [ ] Account recovery options (recovery phrase)
-- [ ] Rate limiting on auth endpoints
-- [ ] Breach detection alerts
-
-### Phase 3 (Pre-launch)
-- [ ] Bug bounty programme
-- [ ] SOC 2 Type II assessment (if enterprise demand warrants)
-- [ ] Regular scheduled security audits
-- [ ] Formal incident response plan
-- [ ] Security training documentation
+| Phase | Security Work |
+|-------|--------------|
+| Phase 1 (now) | AES-GCM via Web Crypto API, PBKDF2 key derivation, local-first auth |
+| Phase 2 | Argon2id upgrade, key rotation, CRDT sync security review |
+| Phase 3 | Metadata minimisation, ephemeral sharing key management, audit |
 
 ---
 
 ## Dependencies
 
-The security posture of Clareifi Notes relies on the security of:
-
-| Dependency | Role | Security Page |
-|------------|------|--------------|
-| libsodium.js | Client-side cryptography | [libsodium docs](https://doc.libsodium.org) |
-| Supabase | Auth, database, storage | [Supabase security](https://supabase.com/security) |
-| Vercel | Hosting and edge delivery | [Vercel security](https://vercel.com/security) |
-| SvelteKit | Frontend framework | [SvelteKit security](https://kit.svelte.dev/docs/security) |
-
-Dependencies are monitored via GitHub Dependabot and updated regularly.
+| Dependency | Purpose | Security Notes |
+|-----------|---------|---------------|
+| Web Crypto API | Encryption / key derivation | Native browser — no supply chain risk |
+| Supabase | Auth + encrypted relay | Sees auth hash + ciphertext only |
+| Vercel | Edge hosting | No user data processed at edge |
+| SvelteKit | Frontend framework | No crypto responsibilities |
+| Transformers.js | On-device AI | No data transmitted |
+| Yjs / Automerge | CRDT sync | Handles encrypted deltas only |
 
 ---
 
-## Responsible Disclosure
+## Scope
 
-If you discover a security issue, please follow responsible disclosure:
+When reporting vulnerabilities, the following are in scope:
 
-1. Email security@clareifi.com with full details
-2. Allow reasonable time for a fix before public disclosure
-3. Do not exploit the vulnerability beyond proof-of-concept
-4. Do not access or modify other users' data
+- Encryption implementation flaws
+- Key derivation weaknesses
+- Data leakage to the server (any plaintext reaching Supabase)
+- Authentication bypasses
+- Client-side vulnerabilities that expose the master key
 
-We will acknowledge your contribution publicly (with your permission) once the issue is resolved.
+Out of scope (for now — Phase 1 is a learning build):
+- Denial of service
+- Rate limiting
+- Social engineering
 
 ---
 
-*Security is not a feature — it is the foundation. Every architectural decision in this project is made with the question: "What happens when this is compromised?"*
+*Last updated: March 2026 — Phase 1, Week 1*
