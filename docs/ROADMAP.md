@@ -1,146 +1,118 @@
-# Clareifi Notes — Development Roadmap
+# Clareifi Notes — Roadmap
 
-## Philosophy: Bottom-Up Approach
+> This roadmap reflects current thinking and will evolve as the build progresses. All decisions are documented in GitHub as they're made.
 
-**Learning project** → **Portfolio piece** → **Monetizable SaaS**
-
----
-
-## Phase 1: Learning Project (Months 1–3)
-**Goal:** Ship something that works for personal daily use
-
-### Week 1–2: Foundation
-- [x] GitHub repository setup
-- [x] Documentation structure (Obsidian dev journal + Standard Notes security docs)
-- [ ] Weekend prototype: Encrypted textarea proof-of-concept
-  - Password-derived key generation
-  - Encrypt/decrypt single text field
-  - Local storage only
-- [ ] Choose final tech stack (confirm SvelteKit)
-- [ ] Initial architecture documentation
-
-### Week 3–6: Core Functionality
-- [ ] Authentication system (email + password)
-- [ ] Key derivation and management (Argon2id via libsodium)
-- [ ] Note CRUD operations (create, read, update, delete)
-- [ ] Client-side encryption/decryption
-- [ ] IndexedDB for local-first storage
-- [ ] Basic markdown editor integration (Tiptap or CodeMirror)
-
-### Week 7–12: Polish for Personal Use
-- [ ] Search (local, unencrypted index)
-- [ ] Note organisation (folders/tags)
-- [ ] Export functionality
-- [ ] Basic UI/UX polish
-- [ ] **Milestone: Daily personal use begins ✅**
-
-### Phase 1 Consulting Deliverables
-- [ ] Blog series: "Building E2EE Apps with AI Assistance" (4–6 posts)
-- [ ] Technical documentation of all security decisions
-- [ ] Case study: "What I Learned Implementing Zero-Knowledge Encryption"
-- [ ] Open source the encryption wrapper library
+## Current Phase: Phase 1 — Week 1
 
 ---
 
-## Phase 2: Portfolio Piece (Months 4–8)
-**Goal:** Demonstrate expertise to potential consulting clients
+## 3-Month Build Roadmap
 
-### Month 4–5: Public Profile Feature
-- [ ] User profile creation
-- [ ] Public profile page (unencrypted, separate from vault)
-- [ ] Custom subdomain/URL support
-- [ ] Profile customisation (bio, links, theme)
-
-### Month 6–7: Selective Sharing
-- [ ] Encrypted share links for individual notes
-- [ ] Permission management (view-only, expiring links)
-- [ ] Share analytics (view counts)
-- [ ] Embeddable public notes
-
-### Month 7: Additional Content Types
-- [ ] Code snippet support with syntax highlighting
-- [ ] Article clipping (save from web)
-- [ ] Basic file attachments
-
-### Month 8: Security & Polish
-- [ ] External security audit/review
-- [ ] Penetration testing
-- [ ] Performance optimisation
-- [ ] Professional UI/UX design
-- [ ] Mobile-responsive design
-
-### Phase 2 Consulting Deliverables
-- [ ] White paper: "Architecture Patterns for Privacy-First Applications"
-- [ ] Workshop/webinar: "Building Trust Through Encryption"
-- [ ] Client presentation deck with Clareifi Notes as case study
-- [ ] Open source share link implementation
-- [ ] Security audit report (public summary)
+*Security-first architecture. Each phase builds the trust layer before the experience layer.*
 
 ---
 
-## Phase 3: Monetizable SaaS (Months 9–12)
-**Goal:** Validate market fit and generate revenue
+### Month 1: The Secure Bunker — Foundation
 
-### Pricing Structure
+**Focus: Data integrity and local encryption.**
 
-| Tier | Price | Storage | Key Features |
-|------|-------|---------|--------------|
-| Free | $0 | 100 MB | Basic E2EE notes, public profile |
-| Personal | $5–8/mo | 10 GB | All content types, unlimited shares, custom domain |
-| Professional | $15–20/mo | 100 GB | API access, team sharing, priority support |
-| Enterprise | Custom | Custom | Self-hosted, compliance docs, consulting included |
+The bunker exists before anything else. Encryption is not a feature added at the end — it is the first thing built, and everything else is layered on top.
 
-### Month 9: SaaS Infrastructure
-- [ ] Stripe integration for subscriptions
-- [ ] Tiered storage limits
-- [ ] Usage analytics and monitoring
-- [ ] Customer support system
-- [ ] Terms of Service & Privacy Policy
+**Deliverables:**
 
-### Month 10: Advanced Features
-- [ ] Photo/media storage with encryption
-- [ ] RSS feed reader integration
-- [ ] Advanced search (encrypted indexes)
-- [ ] Team/collaboration features (shared vaults)
-- [ ] API access for Professional tier
+- **Vault Structure** — Implement the core file system architecture using `IndexedDB` for high-performance, local-only storage
+- **Cryptography Implementation** — Integrate the **Web Crypto API** with **AES-GCM** encryption. All notes are encrypted on-device before touching any disk (local or cloud)
+- **Identity Management** — Build the local-first login flow using a "Key-Derived" authentication system: your password unlocks a local key; the server never holds your credentials
 
-### Month 11: Scale & Performance
-- [ ] CDN setup for global performance
-- [ ] Database optimisation
-- [ ] Automated backups
-- [ ] Incident response procedures
-- [ ] GDPR/compliance documentation
+**What this phase proves:** The encryption layer is the foundation, not an afterthought.
 
-### Month 12: Launch Preparation
-- [ ] Beta programme (100 users)
-- [ ] Marketing website
-- [ ] Documentation and tutorials
-- [ ] Email onboarding sequence
-- [ ] **Public launch 🚀**
+---
+
+### Month 2: The Sync & Relay Layer — Connectivity
+
+**Focus: Reliability without compromising privacy.**
+
+The server is an "encrypted postman." It stores and moves binary blobs. It has no keys. It cannot decrypt. Sync and privacy are not in tension — the architecture makes privacy the only possible outcome.
+
+**Deliverables:**
+
+- **CRDT Integration** — Implement **Yjs** or **Automerge** for conflict-free synchronisation across devices (mobile, desktop)
+- **The "Blind" Sync** — Design the server as a pure encrypted relay: it accepts, stores, and routes binary blobs without any capability to read them
+- **Performance Optimisation** — Efficient data chunking so that syncing large libraries stays snappy on mobile
+
+**What this phase proves:** Multi-device sync is achievable without the server ever seeing your content.
+
+---
+
+### Month 3: The Public Bridge — Distribution
+
+**Focus: Selective sharing and on-device AI.**
+
+**Deliverables:**
+
+- **Encrypted Sharing Engine** — "Public Profile" feature: users generate ephemeral, end-to-end encrypted links for specific notes or collections
+- **Web-Native Encrypted Viewer** — Public-facing view that decrypts content only once the authorised viewer provides the correct access token. Even the developer cannot read what is being shared
+- **On-Device AI Integration** — Deploy a lightweight local LLM via **Transformers.js** for note summarisation and search. Zero bytes leave the device
+
+**What this phase proves:** AI assistance is possible inside a zero-knowledge architecture without breaking it. Your notes can be searchable and summarisable without ever reaching a server.
+
+---
+
+## Build-in-Public Milestones
+
+*Timed to the roadmap. The goal is to show the work under the hood — not just the product.*
+
+| Weeks | What to Share |
+|-------|---------------|
+| 1–4 | The "Encryption First" decision — why Web Crypto API, why AES-GCM, what zero-knowledge means in practice |
+| 5–8 | The "Blind Sync" architecture — visualise how the server sees only encrypted blobs, never content |
+| 9–12 | The first successful "Public Share" of an encrypted note — demonstrating that even the developer cannot read what is being shared |
+
+**Platforms:** Bluesky, Threads, X, Blog (clareifi.com), Paragraph (Dev Stack updates)
+
+---
+
+## Phase 2 — Portfolio (Months 4–8)
+
+*Working product. Open source. Community.*
+
+| Goal | Description |
+|------|-------------|
+| Working MVP | End-to-end encrypted notes, syncing, and sharing — usable by real people |
+| Open Source | Code is public, architecture is documented, contributions welcome |
+| Portfolio | Demonstrates practical E2EE implementation for prospective collaborators |
+
+---
+
+## Phase 3 — SaaS (Months 9–12)
+
+*Sustainable indie business. Privacy as the business model.*
+
+| Goal | Description |
+|------|-------------|
+| SaaS Launch | Hosted version with tiered pricing |
+| Encrypted Sharing | Polished Public Profile and ephemeral link sharing |
+| On-Device AI | Stable local LLM integration across devices |
+
+**Pricing direction (subject to change):**
+
+| Tier | Price | Includes |
+|------|-------|---------|
+| Free | $0 | Local vault, single device |
+| Personal | $5–8/mo | Multi-device sync, encrypted sharing |
+| Professional | $15–20/mo | Team features, priority support |
+| Enterprise | Custom | Custom deployment, audit logs |
 
 ---
 
 ## Success Metrics
 
-| Phase | Key Metrics |
-|-------|------------|
-| Phase 1 | Daily personal use for 30+ days · 3+ blog posts · security architecture documented |
-| Phase 2 | External security review complete · 50+ GitHub stars · 2+ consulting leads |
-| Phase 3 | 100+ beta users · $1,000+ MRR · 5+ enterprise inquiries · 99%+ uptime |
+| Phase | Metric | Target |
+|-------|--------|--------|
+| Phase 1 | Working local vault with E2EE | ✅ Functional prototype |
+| Phase 2 | Syncing across 2+ devices | No plaintext ever on server |
+| Phase 3 | Paying customers | Sustainable without VC |
 
 ---
 
-## Future Considerations (Post-Launch)
-
-- Mobile apps (iOS/Android)
-- Desktop apps (Electron)
-- Browser extensions for article clipping
-- CLI tool
-- Obsidian import/export
-- Standard Notes migration tool
-- AI-powered features (summarisation, smart search)
-
----
-
-**Last Updated:** March 2025
-**Current Phase:** Phase 1 — Week 1
+*Last updated: March 2026 — Phase 1, Week 1*
