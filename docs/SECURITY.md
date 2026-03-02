@@ -4,7 +4,7 @@
 
 Clareifi Notes is built on a zero-knowledge architecture. The security guarantee is architectural, not a policy promise: the server is structurally incapable of reading user content. No keys, no plaintext, ever.
 
-> *"A platform that guarantees their most sensitive work can never be accessed, leaked, or scraped by an LLM-training server without their explicit, encrypted consent."*
+> *"A platform where it's architecturally impossible for your most sensitive work to be accessed, leaked, or scraped by an LLM-training server without your explicit, encrypted consent."*
 
 We take security reports seriously and will respond promptly.
 
