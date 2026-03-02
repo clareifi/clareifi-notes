@@ -37,7 +37,7 @@ Notes are encrypted on your device using **AES-GCM** via the native **Web Crypto
 
 The server is structurally incapable of reading your content. Not by policy — by architecture.
 
-> *"A platform that guarantees their most sensitive work can never be accessed, leaked, or scraped by an LLM-training server without their explicit, encrypted consent."*
+> *"A platform where it's architecturally impossible for your most sensitive work to be accessed, leaked, or scraped by an LLM-training server without your explicit, encrypted consent."*
 
 Full security documentation: [docs/SECURITY.md](docs/SECURITY.md)
 
