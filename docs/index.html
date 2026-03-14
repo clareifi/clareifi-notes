@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clareifi Notes — Documentation</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+              --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-dim: #1f4068;
+      --green: #3fb950;
+      --yellow: #d29922;
+              --purple: #bc8cff;
+        }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+            background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+}
+    header {
+            background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+}
+    header .brand { display: flex; align-items: center; gap: 0.75rem; }
+    header .logo {
+      width: 36px; height: 36px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1.1rem; color: #0d1117;
+    }
+    header h1 { font-size: 1.25rem; font-weight: 600; }
+    header h1 span { color: var(--accent); }
+    header nav a {
+            color: var(--muted);
+      text-decoration: none;
+      margin-left: 1.5rem;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    header nav a:hover { color: var(--text); }
+    .hero {
+      max-width: 860px;
+      margin: 4rem auto 2rem;
+      padding: 0 2rem;
+      text-align: center;
+    }
+    .hero .badge {
+      display: inline-block;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 20px;
+      padding: 0.25rem 0.85rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      letter-spacing: 0.05em;
+    }
+    .hero h2 {
+            font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+}
+    .hero p {
+            font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto 2rem;
+}
+    .hero .cta a {
+            display: inline-block;
+      background: var(--accent);
+      color: #0d1117;
+      font-weight: 600;
+      padding: 0.7rem 1.5rem;
+      border-radius: 8px;
+      text-decoration: none;
+      margin: 0.25rem;
+      font-size: 0.95rem;
+}
+    .hero .cta a.secondary {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    .status-bar {
+            max-width: 860px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+}
+    .status-card {
+            background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      }
+    .phase {
+            padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .phase .tag {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.4rem;
+    }
+    .phase h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .phase p { font-size: 0.8rem; color: var(--muted); }
+    .phase.complete { border-color: var(--green); background: rgba(63,185,80,0.05); }
+    .phase.complete .tag { color: var(--green); }
+    .phase.active { border-color: var(--accent); background: rgba(88,166,255,0.05); }
+    .phase.active .tag { color: var(--accent); }
+    .phase.upcoming { opacity: 0.6; }
+    .phase.upcoming .tag { color: var(--muted); }
+    main {
+            max-width: 860px;
+      margin: 0 auto 4rem;
+      padding: 0 2rem;
+}
+    .section-title {
+            font-size: 1.3rem;
+      font-weight: 600;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+}
+    .principles {
+            display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+      }
+    .principle {
+            background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .principle .icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .principle h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .principle p { font-size: 0.82rem; color: var(--muted); }
+    .stack-table {
+            width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+}
+    .stack-table th {
+            background: rgba(88,166,255,0.08);
+      color: var(--muted);
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border);
+}
+    .stack-table td {
+            padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+}
+    .stack-table tr:last-child td { border-bottom: none; }
+    .stack-table td:first-child { color: var(--muted); font-size: 0.82rem; }
+    .stack-table td:nth-child(2) { color: var(--accent); font-weight: 500; }
+    .stack-table td:nth-child(3) { color: var(--muted); font-size: 0.82rem; }
+    .doc-links {
+            display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1rem;
+      }
+    .doc-link {
+            background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color 0.2s, background 0.2s;
+}
+    .doc-link:hover { border-color: var(--accent); background: var(--accent-dim); }
+    .doc-link .label {
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 0.3rem;
+    }
+    .doc-link h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .doc-link p { font-size: 0.8rem; color: var(--muted); }
+    blockquote {
+            border-left: 3px solid var(--accent);
+      padding: 1rem 1.5rem;
+      background: var(--surface);
+      border-radius: 0 8px 8px 0;
+      margin: 2rem 0;
+      font-style: italic;
+      color: var(--muted);
+      font-size: 0.95rem;
+}
+    footer {
+            border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+}
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+    </head>
+    <body>
+
+    <header>
+      <div class="brand">
+        <div class="logo">C</div>
+        <h1><span>Clareifi</span> Notes</h1>
+      </div>
+      <nav>
+        <a href="ARCHITECTURE.md">Architecture</a>
+        <a href="SECURITY.md">Security</a>
+        <a href="ROADMAP.md">Roadmap</a>
+        <a href="CONTRIBUTING.md">Contributing</a>
+        <a href="https://github.com/clareifi/clareifi-notes">GitHub</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="badge">Built in Public · Phase 2 In Progress</div>
+      <h2>Privacy-first knowledge management for the AI age</h2>
+      <p>End-to-end encrypted notes with local-first architecture. Your data lives on your device — the server is structurally incapable of reading your content.</p>
+  <div class="cta">
+    <a href="https://github.com/clareifi/clareifi-notes">View on GitHub</a>
+    <a href="ARCHITECTURE.md" class="secondary">Read the Docs</a>
+  </div>
+</section>
+
+<div class="status-bar">
+  <div class="status-card">
+    <div class="phase complete">
+      <div class="tag">✅ Complete</div>
+      <h3>Phase 1 — The Secure Bunker</h3>
+      <p>Local E2EE vault, Web Crypto API, IndexedDB storage, PBKDF2 key derivation</p>
+        </div>
+        <div class="phase active">
+          <div class="tag">🔄 In Progress</div>
+      <h3>Phase 2 — The Sync &amp; Relay Layer</h3>
+      <p>CRDT sync via Yjs/Automerge, blind relay server with Supabase</p>
+    </div>
+    <div class="phase upcoming">
+      <div class="tag">⏳ Upcoming</div>
+      <h3>Phase 3 — The Public Bridge</h3>
+      <p>Encrypted sharing, Transformers.js on-device AI for search &amp; summarise</p>
+        </div>
+      </div>
+    </div>
+
+    <main>
+
+      <h2 class="section-title">Core Principles</h2>
+      <div class="principles">
+        <div class="principle">
+          <div class="icon">🔐</div>
+          <h4>Privacy by Default</h4>
+      <p>End-to-end encryption for your personal vault. No plaintext ever leaves your device.</p>
+        </div>
+        <div class="principle">
+          <div class="icon">🏠</div>
+          <h4>Local-First</h4>
+          <p>Your data lives on your device. The server stores only encrypted blobs it cannot read.</p>
+    </div>
+    <div class="principle">
+      <div class="icon">🤖</div>
+      <h4>Zero-Knowledge AI</h4>
+      <p>On-device intelligence via Transformers.js — AI that can't phone home with your content.</p>
+        </div>
+        <div class="principle">
+          <div class="icon">🌐</div>
+          <h4>Selective Sharing</h4>
+          <p>Encrypted public links for what you choose to share, with revocable access.</p>
+    </div>
+  </div>
+
+      <h2 class="section-title">Tech Stack</h2>
+      <table class="stack-table">
+        <thead>
+          <tr><th>Layer</th><th>Technology</th><th>Why</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Framework</td><td>SvelteKit 2 + Svelte 5</td><td>Performance, runes-based reactivity</td></tr>
+          <tr><td>Encryption</td><td>Web Crypto API (AES-GCM)</td><td>Native browser crypto, zero dependencies</td></tr>
+          <tr><td>Local Storage</td><td>IndexedDB (idb-keyval)</td><td>High-performance local-first storage</td></tr>
+      <tr><td>Sync</td><td>Yjs / Automerge (CRDT)</td><td>Conflict-free multi-device sync (Phase 2)</td></tr>
+          <tr><td>Backend</td><td>Supabase</td><td>Blind relay — stores encrypted blobs only</td></tr>
+          <tr><td>Deployment</td><td>Vercel</td><td>Edge-optimised hosting</td></tr>
+          <tr><td>On-device AI</td><td>Transformers.js</td><td>Local LLM for search/summarise (Phase 3)</td></tr>
+        </tbody>
+      </table>
+
+      <blockquote>
+        "A platform where it's architecturally impossible for your most sensitive work to be accessed, leaked, or scraped by an LLM-training server without your explicit, encrypted consent."
+      </blockquote>
+
+      <h2 class="section-title">Documentation</h2>
+      <div class="doc-links">
+        <a class="doc-link" href="ARCHITECTURE.md">
+          <div class="label">Architecture</div>
+          <h4>System Design</h4>
+          <p>Crypto implementation, data flow, and system architecture decisions.</p>
+        </a>
+        <a class="doc-link" href="SECURITY.md">
+          <div class="label">Security</div>
+          <h4>Threat Model</h4>
+          <p>Encryption details, key derivation, and the zero-knowledge architecture.</p>
+        </a>
+        <a class="doc-link" href="ROADMAP.md">
+          <div class="label">Roadmap</div>
+          <h4>Build Plan</h4>
+          <p>Phase-by-phase milestones and what's coming next.</p>
+        </a>
+        <a class="doc-link" href="CONTRIBUTING.md">
+          <div class="label">Contributing</div>
+          <h4>Get Involved</h4>
+          <p>How to contribute to Clareifi Notes and the guidelines for doing so.</p>
+    </a>
+  </div>
+
+</main>
+
+<footer>
+  Built by <a href="https://github.com/clareifi">@clareifi</a> · March 2026 ·
+  <a href="https://github.com/clareifi/clareifi-notes">GitHub Repository</a>
+    </footer>
+
+    </body>
+    </html>
