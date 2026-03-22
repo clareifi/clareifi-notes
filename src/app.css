@@ -1,0 +1,70 @@
+/* Tailwind CSS v4 — CSS-first configuration */
+@import "tailwindcss";
+
+/* ── Design tokens ────────────────────────────────────────────────────────── */
+
+@theme {
+  /* Custom color palette */
+  --color-canvas:  #0d0d0d;
+  --color-surface: #1a1a1a;
+  --color-edge:    #2a2a2a;
+  --color-primary: #e8e8e8;
+  --color-muted:   #888888;
+
+  /* Monospace font stack */
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'Cascadia Code',
+               SFMono-Regular, Menlo, 'Courier New', monospace;
+}
+
+/* ── CSS variables (used directly in component <style> blocks) ────────────── */
+
+:root {
+  --bg:      #0d0d0d;
+  --surface: #1a1a1a;
+  --border:  #2a2a2a;
+  --text:    #e8e8e8;
+  --muted:   #888888;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'Cascadia Code',
+               SFMono-Regular, Menlo, 'Courier New', monospace;
+}
+
+/* ── Base resets ──────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Remove default button / input appearance */
+button {
+  font: inherit;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+textarea {
+  font: inherit;
+}
