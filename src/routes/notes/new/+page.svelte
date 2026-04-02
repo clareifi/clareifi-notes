@@ -5,6 +5,7 @@
   import { encryptNote } from '$lib/crypto.js';
   import { saveNote } from '$lib/storage.js';
 
+  let title = $state('');
   let content = $state('');
   let saving = $state(false);
   let error = $state('');
@@ -20,12 +21,17 @@
     error = '';
 
     try {
-      const { iv, ciphertext } = await encryptNote(content, session.masterKey);
+      const [{ iv, ciphertext }, { iv: titleIv, ciphertext: titleCiphertext }] = await Promise.all([
+        encryptNote(content, session.masterKey),
+        encryptNote(title.trim(), session.masterKey),
+      ]);
       const now = new Date().toISOString();
       const note = {
         id: crypto.randomUUID(),
         iv,
         ciphertext,
+        titleIv,
+        titleCiphertext,
         createdAt: now,
         updatedAt: now,
       };
@@ -45,6 +51,12 @@
     <a href="/" class="back-link">← all notes</a>
     <span class="label">new note</span>
   </div>
+
+  <input
+    bind:value={title}
+    placeholder="title (optional)"
+    class="title-input"
+  />
 
   <textarea
     bind:value={content}
@@ -95,6 +107,22 @@
     font-size: 0.7rem;
     color: var(--muted);
   }
+
+  .title-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+  }
+  .title-input:focus { border-color: var(--muted); }
+  .title-input::placeholder { color: var(--muted); }
 
   .editor {
     width: 100%;

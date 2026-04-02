@@ -11,7 +11,9 @@
   // Component state
   let note = $state<EncryptedNote | null>(null);
   let decrypted = $state('');
+  let decryptedTitle = $state('');
   let editContent = $state('');
+  let editTitle = $state('');
   let mode = $state<'view' | 'edit'>('view');
   let loading = $state(true);
   let saving = $state(false);
@@ -35,7 +37,11 @@
     try {
       note = fetched;
       decrypted = await decryptNote(fetched.ciphertext, fetched.iv, session.masterKey);
+      if (fetched.titleCiphertext && fetched.titleIv) {
+        decryptedTitle = await decryptNote(fetched.titleCiphertext, fetched.titleIv, session.masterKey);
+      }
       editContent = decrypted;
+      editTitle = decryptedTitle;
     } catch (err) {
       console.error(err);
       error = 'failed to decrypt note — the key may have changed';
@@ -50,18 +56,24 @@
     error = '';
 
     try {
-      // Re-encrypt with a fresh IV — never reuse the original
-      const { iv, ciphertext } = await encryptNote(editContent, session.masterKey);
+      // Re-encrypt with fresh IVs — never reuse originals
+      const [{ iv, ciphertext }, { iv: titleIv, ciphertext: titleCiphertext }] = await Promise.all([
+        encryptNote(editContent, session.masterKey),
+        encryptNote(editTitle, session.masterKey),
+      ]);
       const updated: EncryptedNote = {
         ...note,
         iv,
         ciphertext,
+        titleIv,
+        titleCiphertext,
         updatedAt: new Date().toISOString(),
       };
 
       await saveNote(updated);
       note = updated;
       decrypted = editContent;
+      decryptedTitle = editTitle;
       mode = 'view';
     } catch (err) {
       console.error(err);
@@ -79,11 +91,13 @@
 
   function enterEdit() {
     editContent = decrypted;
+    editTitle = decryptedTitle;
     mode = 'edit';
   }
 
   function cancelEdit() {
     editContent = decrypted;
+    editTitle = decryptedTitle;
     mode = 'view';
   }
 
@@ -133,10 +147,18 @@
 
     <!-- View mode -->
     {#if mode === 'view'}
+      {#if decryptedTitle}
+        <h2 class="note-title">{decryptedTitle}</h2>
+      {/if}
       <div class="note-body">{decrypted}</div>
 
     <!-- Edit mode -->
     {:else}
+      <input
+        bind:value={editTitle}
+        placeholder="title (optional)"
+        class="title-input"
+      />
       <textarea
         bind:value={editContent}
         autofocus
@@ -241,6 +263,30 @@
     color: var(--muted);
     opacity: 0.8;
   }
+
+  .note-title {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text);
+    margin: 0;
+  }
+
+  .title-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+  }
+  .title-input:focus { border-color: var(--muted); }
+  .title-input::placeholder { color: var(--muted); }
 
   .note-body {
     background: var(--surface);

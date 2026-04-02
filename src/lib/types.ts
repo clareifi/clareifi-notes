@@ -3,6 +3,8 @@ export interface EncryptedNote {
   id: string;           // crypto.randomUUID()
   iv: Uint8Array;       // 12 bytes, random per operation
   ciphertext: ArrayBuffer; // AES-GCM encrypted content
+  titleIv?: Uint8Array;          // 12 bytes, random per operation
+  titleCiphertext?: ArrayBuffer; // AES-GCM encrypted title
   createdAt: string;    // ISO 8601
   updatedAt: string;    // ISO 8601
 }

@@ -3,14 +3,29 @@
   import { onMount } from 'svelte';
   import { session } from '$lib/stores.svelte.js';
   import { getAllNotes } from '$lib/storage.js';
+  import { decryptNote } from '$lib/crypto.js';
   import type { EncryptedNote } from '$lib/types.js';
 
-  let notes = $state<EncryptedNote[]>([]);
+  let notesWithTitles = $state<{ note: EncryptedNote; title: string }[]>([]);
   let loading = $state(true);
 
   onMount(async () => {
-    if (session.isUnlocked) {
-      notes = await getAllNotes();
+    if (session.isUnlocked && session.masterKey) {
+      const allNotes = await getAllNotes();
+      notesWithTitles = await Promise.all(
+        allNotes.map(async (note) => {
+          let title = shortId(note.id);
+          if (note.titleCiphertext && note.titleIv && session.masterKey) {
+            try {
+              const decrypted = await decryptNote(note.titleCiphertext, note.titleIv, session.masterKey);
+              title = decrypted || shortId(note.id);
+            } catch {
+              // keep fallback
+            }
+          }
+          return { note, title };
+        })
+      );
     }
     loading = false;
   });
@@ -45,10 +60,10 @@
     </div>
   {:else}
     <ul class="note-list">
-      {#each notes as note (note.id)}
+      {#each notesWithTitles as { note, title } (note.id)}
         <li>
           <a href="/notes/{note.id}" class="note-row">
-            <span class="note-id">{shortId(note.id)}</span>
+            <span class="note-label">{title}</span>
             <span class="note-date">{formatDate(note.updatedAt)}</span>
           </a>
         </li>
@@ -121,13 +136,13 @@
   }
   .note-row:hover { border-color: var(--muted); }
 
-  .note-id {
+  .note-label {
     font-family: var(--font-mono);
     font-size: 0.7rem;
     color: var(--muted);
     transition: color 0.15s;
   }
-  .note-row:hover .note-id { color: var(--text); }
+  .note-row:hover .note-label { color: var(--text); }
 
   .note-date {
     font-family: var(--font-mono);
