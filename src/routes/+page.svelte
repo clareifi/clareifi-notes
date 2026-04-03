@@ -53,7 +53,7 @@
 
   {#if loading}
     <p class="hint">loading…</p>
-  {:else if notes.length === 0}
+  {:else if notesWithTitles.length === 0}
     <div class="empty-state">
       <p class="hint">no notes yet</p>
       <a href="/notes/new" class="empty-cta">create your first note →</a>

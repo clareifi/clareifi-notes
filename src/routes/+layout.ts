@@ -1,4 +1,4 @@
-import { injectAnalytics } from '@vercel/analytics/sveltekit';
+import { injectAnalytics } from '@vercel/analytics';
 import { dev } from '$app/environment';
 
 // Disable server-side rendering — this app uses browser-only APIs
