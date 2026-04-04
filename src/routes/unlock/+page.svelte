@@ -4,6 +4,7 @@
   import { deriveKeys } from '$lib/crypto.js';
   import { getVaultConfig } from '$lib/storage.js';
   import { session } from '$lib/stores.svelte.js';
+  import { supabase } from '$lib/supabase.js';
 
   let password = $state('');
   let error = $state('');
@@ -30,8 +31,20 @@
         return;
       }
 
-      // Correct password — set master key in memory and proceed
+      // Local auth is the source of truth — unlock the session now
       session.setMasterKey(masterKey);
+
+      // Establish Supabase session for sync — non-blocking if it fails
+      if (config.email) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: config.email,
+          password,
+        });
+        if (signInError) {
+          console.error('[unlock] Supabase sign-in failed:', signInError.message);
+        }
+      }
+
       goto('/');
     } catch (err) {
       console.error(err);

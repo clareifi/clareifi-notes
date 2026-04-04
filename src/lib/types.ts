@@ -13,6 +13,7 @@ export interface EncryptedNote {
 export interface VaultConfig {
   salt: Uint8Array;     // 16 bytes, random, generated on vault creation
   authHash: string;     // hex-encoded PBKDF2 derivation — NOT the master key
+  email?: string;       // stored locally so unlock can sign in to Supabase without re-asking
   createdAt: string;
 }
 

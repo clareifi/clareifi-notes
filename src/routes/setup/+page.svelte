@@ -4,16 +4,28 @@
   import { generateSalt, deriveKeys } from '$lib/crypto.js';
   import { saveVaultConfig } from '$lib/storage.js';
   import { session } from '$lib/stores.svelte.js';
+  import { supabase } from '$lib/supabase.js';
 
+  let email = $state('');
   let password = $state('');
   let confirmPassword = $state('');
   let error = $state('');
   let loading = $state(false);
 
+  function toBase64(bytes: Uint8Array): string {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+  }
+
   async function createVault(e: SubmitEvent) {
     e.preventDefault();
     error = '';
 
+    if (!email.includes('@')) {
+      error = 'please enter a valid email address';
+      return;
+    }
     if (password.length < 8) {
       error = 'password must be at least 8 characters';
       return;
@@ -28,11 +40,31 @@
       const salt = generateSalt();
       const { masterKey, authHash } = await deriveKeys(password, salt);
 
+      // Save locally first — local storage is always primary
       await saveVaultConfig({
         salt,
         authHash,
+        email,
         createdAt: new Date().toISOString(),
       });
+
+      // Create Supabase Auth account and persist vault config remotely
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      if (signUpError) {
+        console.error('[setup] Supabase signUp failed:', signUpError.message);
+      } else if (signUpData.user) {
+        const { error: insertError } = await supabase.from('vault_config').insert({
+          user_id: signUpData.user.id,
+          salt: toBase64(salt),
+          auth_hash: authHash,
+        });
+        if (insertError) {
+          console.error('[setup] vault_config insert failed:', insertError.message);
+        }
+      }
 
       // Unlock the session — master key lives in memory only
       session.setMasterKey(masterKey);
@@ -56,6 +88,17 @@
   </div>
 
   <form onsubmit={createVault} class="form">
+    <label class="field">
+      <span class="label">email</span>
+      <input
+        type="email"
+        bind:value={email}
+        placeholder="you@example.com"
+        autocomplete="email"
+        class="input"
+      />
+    </label>
+
     <label class="field">
       <span class="label">vault password</span>
       <input
