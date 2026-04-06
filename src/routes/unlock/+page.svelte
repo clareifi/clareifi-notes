@@ -44,13 +44,16 @@
         });
         if (signInError) {
           console.error('[unlock] Supabase sign-in failed:', signInError.message);
-        } else {
-          loadingStatus = 'syncing…';
-          try {
-            const pulled = await pullNotesFromSupabase();
-            if (pulled > 0) console.log(`[unlock] pulled ${pulled} note(s) from Supabase`);
-          } catch (syncErr) { console.error('[unlock] pull failed:', syncErr); }
         }
+      }
+
+      // Pull notes — no-op if no active session, never blocks vault access
+      loadingStatus = 'syncing…';
+      try {
+        const pulled = await pullNotesFromSupabase();
+        if (pulled > 0) console.log(`[unlock] pulled ${pulled} note(s) from Supabase`);
+      } catch (syncErr) {
+        console.error('[unlock] pull failed:', syncErr);
       }
 
       goto('/');

@@ -97,21 +97,26 @@ export async function pullNotesFromSupabase(): Promise<number> {
     .select('id, ciphertext, iv, title_ciphertext, title_iv, created_at, updated_at')
     .eq('user_id', user.id);
 
-  if (error) { console.error('[storage] pullNotesFromSupabase failed:', error.message); return 0; }
+  if (error) {
+    console.error('[storage] pullNotesFromSupabase failed:', error.message);
+    return 0;
+  }
   if (!rows || rows.length === 0) return 0;
 
   let written = 0;
   for (const row of rows) {
-    const localNote = await get(`note:${row.id}`);
-    if (localNote) {
-      if (new Date(localNote.updatedAt).getTime() >= new Date(row.updated_at).getTime()) continue;
+    // Local is always primary — skip if local copy is same age or newer
+    const existing = await get<EncryptedNote>(`${NOTE_PREFIX}${row.id}`);
+    if (existing && new Date(existing.updatedAt).getTime() >= new Date(row.updated_at).getTime()) {
+      continue;
     }
-    await set(`note:${row.id}`, {
+
+    await saveNote({
       id: row.id,
-      iv: (() => { const b = atob(row.iv); const a = new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a; })(),
-      ciphertext: (() => { const b = atob(row.ciphertext); const a = new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a.buffer; })(),
-      titleIv: row.title_iv ? (() => { const b = atob(row.title_iv); const a = new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a; })() : undefined,
-      titleCiphertext: row.title_ciphertext ? (() => { const b = atob(row.title_ciphertext); const a = new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a.buffer; })() : undefined,
+      iv: fromBase64(row.iv),
+      ciphertext: fromBase64(row.ciphertext).buffer,
+      titleIv: row.title_iv ? fromBase64(row.title_iv) : undefined,
+      titleCiphertext: row.title_ciphertext ? fromBase64(row.title_ciphertext).buffer : undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     });
