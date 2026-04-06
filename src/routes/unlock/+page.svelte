@@ -2,18 +2,20 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { deriveKeys } from '$lib/crypto.js';
-  import { getVaultConfig } from '$lib/storage.js';
+  import { getVaultConfig, pullNotesFromSupabase } from '$lib/storage.js';
   import { session } from '$lib/stores.svelte.js';
   import { supabase } from '$lib/supabase.js';
 
   let password = $state('');
   let error = $state('');
   let loading = $state(false);
+  let loadingStatus = $state('unlocking…');
 
   async function unlock(e: SubmitEvent) {
     e.preventDefault();
     error = '';
     loading = true;
+    loadingStatus = 'unlocking…';
 
     try {
       const config = await getVaultConfig();
@@ -42,6 +44,12 @@
         });
         if (signInError) {
           console.error('[unlock] Supabase sign-in failed:', signInError.message);
+        } else {
+          loadingStatus = 'syncing…';
+          try {
+            const pulled = await pullNotesFromSupabase();
+            if (pulled > 0) console.log(`[unlock] pulled ${pulled} note(s) from Supabase`);
+          } catch (syncErr) { console.error('[unlock] pull failed:', syncErr); }
         }
       }
 
@@ -78,7 +86,7 @@
     {/if}
 
     <button type="submit" disabled={loading} class="btn-primary">
-      {loading ? 'unlocking…' : 'unlock vault'}
+      {loading ? loadingStatus : 'unlock vault'}
     </button>
   </form>
 

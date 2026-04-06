@@ -20,6 +20,14 @@ function toBase64(bytes: Uint8Array | ArrayBuffer): string {
   return btoa(binary);
 }
 
+/** Decode a base64 string back to a Uint8Array. */
+function fromBase64(b64: string): Uint8Array {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
 const VAULT_CONFIG_KEY = 'vault_config';
 const NOTE_PREFIX = 'note:';
 
@@ -78,6 +86,38 @@ export async function getAllNotes(): Promise<EncryptedNote[]> {
   return (notes.filter(Boolean) as EncryptedNote[]).sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
+}
+
+export async function pullNotesFromSupabase(): Promise<number> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return 0;
+
+  const { data: rows, error } = await supabase
+    .from('notes')
+    .select('id, ciphertext, iv, title_ciphertext, title_iv, created_at, updated_at')
+    .eq('user_id', user.id);
+
+  if (error) { console.error('[storage] pullNotesFromSupabase failed:', error.message); return 0; }
+  if (!rows || rows.length === 0) return 0;
+
+  let written = 0;
+  for (const row of rows) {
+    const localNote = await get(`note:${row.id}`);
+    if (localNote) {
+      if (new Date(localNote.updatedAt).getTime() >= new Date(row.updated_at).getTime()) continue;
+    }
+    await set(`note:${row.id}`, {
+      id: row.id,
+      iv: (() => { const b = atob(row.iv); const a = new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a; })(),
+      ciphertext: (() => { const b = atob(row.ciphertext); const a = new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a.buffer; })(),
+      titleIv: row.title_iv ? (() => { const b = atob(row.title_iv); const a = new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a; })() : undefined,
+      titleCiphertext: row.title_ciphertext ? (() => { const b = atob(row.title_ciphertext); const a = new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a.buffer; })() : undefined,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    });
+    written++;
+  }
+  return written;
 }
 
 export async function deleteNote(id: string): Promise<void> {
