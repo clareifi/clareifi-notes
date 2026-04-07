@@ -84,6 +84,19 @@
         }
       }
 
+      // Ensure an active Supabase session exists before navigating away,
+      // so that saveNote() can sync immediately on the notes page.
+      // signUp may return a user without a session (e.g. email confirmation enabled).
+      if (supabaseUserId) {
+        const { data: { session: activeSession } } = await supabase.auth.getSession();
+        if (!activeSession) {
+          const { error: sessionError } = await supabase.auth.signInWithPassword({ email, password });
+          if (sessionError) {
+            console.error('[setup] Supabase session establishment failed:', sessionError.message);
+          }
+        }
+      }
+
       // Unlock the session — master key lives in memory only
       session.setMasterKey(masterKey);
       goto('/');
