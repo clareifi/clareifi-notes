@@ -4,6 +4,8 @@
   import { session } from '$lib/stores.svelte.js';
   import { vaultExists } from '$lib/storage.js';
   import '../app.css';
+  import { inject } from '@vercel/analytics';
+  inject();
 
   let { children } = $props();
 
