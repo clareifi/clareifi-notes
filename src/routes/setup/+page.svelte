@@ -53,16 +53,34 @@
         email,
         password,
       });
+
+      let supabaseUserId: string | null = signUpData?.user?.id ?? null;
+
       if (signUpError) {
-        console.error('[setup] Supabase signUp failed:', signUpError.message);
-      } else if (signUpData.user) {
-        const { error: insertError } = await supabase.from('vault_config').insert({
-          user_id: signUpData.user.id,
+        if (signUpError.message.includes('User already registered')) {
+          // Account exists (e.g. user cleared local data) — sign in instead
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (signInError) {
+            console.error('[setup] Supabase sign-in fallback failed:', signInError.message);
+          } else {
+            supabaseUserId = signInData.user?.id ?? null;
+          }
+        } else {
+          console.error('[setup] Supabase signUp failed:', signUpError.message);
+        }
+      }
+
+      if (supabaseUserId) {
+        const { error: upsertError } = await supabase.from('vault_config').upsert({
+          user_id: supabaseUserId,
           salt: toBase64(salt),
           auth_hash: authHash,
-        });
-        if (insertError) {
-          console.error('[setup] vault_config insert failed:', insertError.message);
+        }, { onConflict: 'user_id' });
+        if (upsertError) {
+          console.error('[setup] vault_config upsert failed:', upsertError.message);
         }
       }
 
