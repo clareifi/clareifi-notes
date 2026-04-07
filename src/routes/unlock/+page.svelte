@@ -2,14 +2,22 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { deriveKeys } from '$lib/crypto.js';
-  import { getVaultConfig, pullNotesFromSupabase } from '$lib/storage.js';
+  import { getVaultConfig, saveVaultConfig, pullNotesFromSupabase } from '$lib/storage.js';
   import { session } from '$lib/stores.svelte.js';
   import { supabase } from '$lib/supabase.js';
 
+  let email = $state('');
   let password = $state('');
   let error = $state('');
   let loading = $state(false);
   let loadingStatus = $state('unlocking…');
+
+  function fromBase64(b64: string): Uint8Array {
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
 
   async function unlock(e: SubmitEvent) {
     e.preventDefault();
@@ -19,12 +27,58 @@
 
     try {
       const config = await getVaultConfig();
+
       if (!config) {
-        // No vault found — redirect to setup
-        goto('/setup');
+        // New device — sign in to Supabase and fetch the salt that was used
+        // when the vault was originally created, so we derive the same key.
+        loadingStatus = 'signing in…';
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) {
+          error = 'sign-in failed — check your email and password';
+          loading = false;
+          return;
+        }
+
+        loadingStatus = 'fetching vault…';
+        const { data: remoteConfig, error: fetchError } = await supabase
+          .from('vault_config')
+          .select('salt, auth_hash')
+          .eq('user_id', signInData.user.id)
+          .single();
+        if (fetchError || !remoteConfig) {
+          error = 'vault not found — create one first';
+          loading = false;
+          return;
+        }
+
+        const salt = fromBase64(remoteConfig.salt);
+        const { masterKey, authHash } = await deriveKeys(password, salt);
+
+        await saveVaultConfig({
+          salt,
+          authHash,
+          email,
+          createdAt: new Date().toISOString(),
+        });
+
+        session.setMasterKey(masterKey);
+
+        loadingStatus = 'syncing…';
+        try {
+          const pulled = await pullNotesFromSupabase();
+          if (pulled > 0) console.log(`[unlock] pulled ${pulled} note(s) from Supabase`);
+        } catch (syncErr) {
+          console.error('[unlock] pull failed:', syncErr);
+        }
+
+        goto('/');
         return;
       }
 
+      // Local vault exists — existing flow unchanged
       const { masterKey, authHash } = await deriveKeys(password, config.salt);
 
       if (authHash !== config.authHash) {
@@ -72,6 +126,17 @@
   </div>
 
   <form onsubmit={unlock} class="form">
+    <label class="field">
+      <span class="label">email</span>
+      <input
+        type="email"
+        bind:value={email}
+        placeholder="you@example.com"
+        autocomplete="email"
+        class="input"
+      />
+    </label>
+
     <label class="field">
       <span class="label">vault password</span>
       <input
