@@ -14,7 +14,7 @@
   // If the vault is locked and we're not on a public route, redirect.
   $effect(() => {
     const currentPath = page.url.pathname;
-    const isPublic = PUBLIC_ROUTES.includes(currentPath);
+    const isPublic = PUBLIC_ROUTES.includes(currentPath) || currentPath.startsWith('/about');
 
     if (!session.isUnlocked && !isPublic) {
       vaultExists().then((exists) => {
