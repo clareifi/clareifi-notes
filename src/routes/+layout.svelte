@@ -3,6 +3,7 @@
   import { page } from '$app/state';
   import { session } from '$lib/stores.svelte.js';
   import { vaultExists } from '$lib/storage.js';
+  import { supabase } from '$lib/supabase.js';
   import '../app.css';
   import { inject } from '@vercel/analytics';
   inject();
@@ -11,6 +12,10 @@
 
   // Routes that don't require an unlocked vault
   const PUBLIC_ROUTES = ['/setup', '/unlock'];
+
+  // BroadcastChannel for cross-tab vault lock propagation.
+  // SSR is disabled for this app so BroadcastChannel is always available.
+  const vaultChannel = new BroadcastChannel('clareifi-vault');
 
   // Auth guard: re-evaluate whenever the session state or route changes.
   // If the vault is locked and we're not on a public route, redirect.
@@ -24,6 +29,21 @@
       });
     }
   });
+
+  // Listen for lock events from other tabs. BroadcastChannel does not
+  // deliver to the sender, so this only fires in non-originating tabs.
+  $effect(() => {
+    vaultChannel.onmessage = (event) => {
+      if (event.data?.type === 'vault-locked') {
+        session.clearSession();
+        goto('/unlock');
+      }
+    };
+    return () => {
+      vaultChannel.onmessage = null;
+      vaultChannel.close();
+    };
+  });
 </script>
 
 <div class="app-shell">
@@ -34,8 +54,15 @@
         <span class="vault-status">🔓 vault unlocked</span>
         <button
           class="lock-btn"
-          onclick={() => {
+          onclick={async () => {
             session.clearSession();
+            vaultChannel.postMessage({ type: 'vault-locked' });
+            try {
+              await supabase.auth.signOut({ scope: 'local' });
+            } catch (e) {
+              console.warn('signOut failed on vault lock', e);
+              // proceed anyway — local state is already zeroed
+            }
             goto('/unlock');
           }}
         >
