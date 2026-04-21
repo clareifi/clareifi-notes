@@ -33,14 +33,14 @@
   </header>
 
   <section class="mission">
-    <h2>What we're building</h2>
+    <h2>What I'm building</h2>
     <p>
       Clareifi Notes is an end-to-end encrypted notes app built on zero-knowledge architecture.
-      Your notes are encrypted before they leave your device — we never see your content, your keys,
+      Your notes are encrypted before they leave your device — I never see your content, your keys,
       or your plaintext. The server only stores ciphertext.
     </p>
     <p>
-      We believe privacy should be a structural guarantee, not a policy promise.
+      I believe privacy should be a structural guarantee, not a policy promise.
     </p>
   </section>
 
@@ -93,7 +93,6 @@
     <div class="links">
       <a href="https://github.com/clareifi/clareifi-notes" target="_blank" rel="noopener">GitHub</a>
       <a href="https://bsky.app/profile/clareifi.com" target="_blank" rel="noopener">Bluesky</a>
-      <a href="https://threads.net/@clareifi" target="_blank" rel="noopener">Threads</a>
     </div>
   </section>
 
