@@ -41,13 +41,15 @@ export async function deriveKeys(
     ['deriveKey', 'deriveBits']
   );
 
-  // Derive the master key (non-extractable AES-GCM 256-bit)
+  // Derive the master key (non-extractable AES-GCM 256-bit).
+  // wrapKey/unwrapKey usages are included so this key also serves as the
+  // KEK for envelope encryption — no second PBKDF2 derivation needed.
   const masterKey = await crypto.subtle.deriveKey(
     { name: 'PBKDF2', salt, iterations: 310_000, hash: 'SHA-256' },
     keyMaterial,
     { name: 'AES-GCM', length: 256 },
     false,       // non-extractable — the key can never be exported
-    ['encrypt', 'decrypt']
+    ['encrypt', 'decrypt', 'wrapKey', 'unwrapKey']
   );
 
   // Derive the auth hash using a salt variant (salt || 0xFF)
@@ -99,4 +101,71 @@ export async function decryptNote(
     ciphertext
   );
   return new TextDecoder().decode(plaintext);
+}
+
+// ── Envelope encryption primitives ───────────────────────────────────────────
+//
+// These functions implement the DEK (Data Encryption Key) layer.
+// Each note gets its own random DEK. The DEK is wrapped (encrypted) under
+// the KEK (Key Encryption Key — the PBKDF2-derived master key) and stored
+// alongside the note. Re-keying only touches the wrapped DEKs, never the
+// note ciphertext.
+
+/**
+ * Generate a fresh random AES-GCM 256-bit Data Encryption Key (DEK).
+ *
+ * extractable: true is required so wrapKey can export the raw bytes
+ * internally for wrapping. The DEK becomes non-extractable after unwrapKey
+ * (see unwrapDek). Raw key bytes never surface in application code.
+ */
+export async function generateDek(): Promise<CryptoKey> {
+  return crypto.subtle.generateKey(
+    { name: 'AES-GCM', length: 256 },
+    true,                          // extractable — required for wrapKey
+    ['encrypt', 'decrypt']
+  );
+}
+
+/**
+ * Wrap (encrypt) a DEK under a KEK using AES-GCM.
+ * A fresh random 12-byte IV is generated for every call.
+ *
+ * Returns the wrapped DEK bytes and the IV. Both must be stored with the
+ * note — they are required for unwrapping.
+ */
+export async function wrapDek(
+  dek: CryptoKey,
+  kek: CryptoKey
+): Promise<{ wrappedDek: ArrayBuffer; wrapIv: Uint8Array<ArrayBuffer> }> {
+  const wrapIv = crypto.getRandomValues(new Uint8Array(12)) as Uint8Array<ArrayBuffer>;
+  const wrappedDek = await crypto.subtle.wrapKey(
+    'raw',
+    dek,
+    kek,
+    { name: 'AES-GCM', iv: wrapIv }
+  );
+  return { wrappedDek, wrapIv };
+}
+
+/**
+ * Unwrap (decrypt) a previously wrapped DEK using the KEK.
+ * Throws if the KEK is wrong or the wrapped bytes have been tampered with.
+ *
+ * The returned CryptoKey is NON-extractable — it can only be used for
+ * AES-GCM encrypt/decrypt operations and cannot be re-exported.
+ */
+export async function unwrapDek(
+  wrappedDek: ArrayBuffer,
+  wrapIv: Uint8Array<ArrayBuffer>,
+  kek: CryptoKey
+): Promise<CryptoKey> {
+  return crypto.subtle.unwrapKey(
+    'raw',
+    wrappedDek,
+    kek,
+    { name: 'AES-GCM', iv: wrapIv },  // unwrap algorithm
+    { name: 'AES-GCM', length: 256 },  // unwrapped key algorithm
+    false,                              // non-extractable after unwrap
+    ['encrypt', 'decrypt']
+  );
 }

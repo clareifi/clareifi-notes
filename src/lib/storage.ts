@@ -111,7 +111,10 @@ export async function pullNotesFromSupabase(): Promise<number> {
       continue;
     }
 
-    await saveNote({
+    // Write directly to IndexedDB — do NOT call saveNote() here because
+    // that re-upserts to Supabase, which fires the updated_at trigger
+    // and resets every pulled note's timestamp to now().
+    const pulledNote: EncryptedNote = {
       id: row.id,
       iv: fromBase64(row.iv),
       ciphertext: fromBase64(row.ciphertext).buffer,
@@ -119,7 +122,8 @@ export async function pullNotesFromSupabase(): Promise<number> {
       titleCiphertext: row.title_ciphertext ? fromBase64(row.title_ciphertext).buffer : undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-    });
+    };
+    await set(`${NOTE_PREFIX}${row.id}`, pulledNote);
     written++;
   }
   return written;
