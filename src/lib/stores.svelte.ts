@@ -10,24 +10,30 @@
 
 class SessionStore {
   masterKey: CryptoKey | null = $state(null);
+  kek: CryptoKey | null = $state(null);
   isUnlocked: boolean = $state(false);
+  envelopeActive: boolean = $state(false);
 
   /**
-   * Set the master key after successful vault unlock.
-   * The key lives in memory for the duration of the session only.
+   * Set the active masterKey (DEK or legacy key) and optional KEK after successful vault unlock.
+   * All keys live in memory for the duration of the session only.
    */
-  setMasterKey(key: CryptoKey): void {
+  setMasterKey(key: CryptoKey, kek?: CryptoKey | null): void {
     this.masterKey = key;
+    this.kek = kek ?? key;
+    this.envelopeActive = Boolean(kek && kek !== key);
     this.isUnlocked = true;
   }
 
   /**
-   * Clear the session — discard the master key from memory.
+   * Clear the session — discard both masterKey (DEK) and KEK from memory.
    * After this call, notes cannot be decrypted without re-entering
    * the vault password.
    */
   clearSession(): void {
     this.masterKey = null;
+    this.kek = null;
+    this.envelopeActive = false;
     this.isUnlocked = false;
   }
 }

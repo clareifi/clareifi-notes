@@ -1,34 +1,48 @@
-/* Tailwind CSS v4 — CSS-first configuration */
+/* Tailwind CSS v4 — Production Design System for Clareifi Notes */
 @import "tailwindcss";
 
-/* ── Design tokens ────────────────────────────────────────────────────────── */
-
 @theme {
-  /* Custom color palette */
-  --color-canvas:  #0d0d0d;
-  --color-surface: #1a1a1a;
-  --color-edge:    #2a2a2a;
-  --color-primary: #e8e8e8;
-  --color-muted:   #888888;
+  --color-canvas: #0a0a0a;
+  --color-surface: #141414;
+  --color-surface-elevated: #1c1c1c;
+  --color-edge: #262626;
+  --color-primary: #f5f5f5;
+  --color-muted: #8a8a8a;
+  --color-accent: #10b981;
 
-  /* Monospace font stack */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'Cascadia Code',
                SFMono-Regular, Menlo, 'Courier New', monospace;
 }
-
-/* ── CSS variables (used directly in component <style> blocks) ────────────── */
 
 :root {
-  --bg:      #0d0d0d;
-  --surface: #1a1a1a;
-  --border:  #2a2a2a;
-  --text:    #e8e8e8;
-  --muted:   #888888;
+  color-scheme: dark;
+  --bg: #0a0a0a;
+  --surface: #121212;
+  --surface-hover: #1a1a1a;
+  --border: #262626;
+  --border-subtle: #1f1f1f;
+  --text: #f5f5f5;
+  --text-secondary: #a3a3a3;
+  --muted: #737373;
+  --accent: #34d399;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'Cascadia Code',
                SFMono-Regular, Menlo, 'Courier New', monospace;
 }
 
-/* ── Base resets ──────────────────────────────────────────────────────────── */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --surface-hover: #f5f5f5;
+  --border: #e5e5e5;
+  --border-subtle: #f0f0f0;
+  --text: #171717;
+  --text-secondary: #525252;
+  --muted: #737373;
+  --accent: #059669;
+}
 
 *,
 *::before,
@@ -40,31 +54,24 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 html,
 body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
+  min-height: 100vh;
+  background-color: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--font-sans);
 }
 
-/* Remove default button / input appearance */
-button {
-  font: inherit;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 0;
-}
-
-a {
+::selection {
+  background-color: rgba(52, 211, 153, 0.22);
   color: inherit;
-  text-decoration: none;
 }
 
-textarea {
-  font: inherit;
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }

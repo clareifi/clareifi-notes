@@ -20,7 +20,7 @@ async function makeV1Note(
   version?: 1
 ): Promise<EncryptedNote> {
   const { iv, ciphertext } = await encryptNote(content, kek);
-  let titleIv: Uint8Array | undefined;
+  let titleIv: Uint8Array<ArrayBuffer> | undefined;
   let titleCiphertext: ArrayBuffer | undefined;
   if (title !== undefined) {
     const enc = await encryptNote(title, kek);
