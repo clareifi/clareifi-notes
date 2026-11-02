@@ -303,18 +303,13 @@
                 : 'border-neutral-800/80 bg-[var(--surface)] hover:border-neutral-700 hover:bg-[var(--surface-hover)]'}"
             >
               <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2.5">
-                  <span
-                    class="truncate text-sm font-medium transition duration-150 {isUntitled
-                      ? 'italic text-[var(--muted)] group-hover:text-[var(--text-secondary)]'
-                      : 'text-[var(--text)]'}"
-                  >
-                    {title}
-                  </span>
-                  <span class="shrink-0 rounded border border-neutral-800 bg-[var(--bg)] px-1.5 py-0.5 text-[10px] font-mono text-[var(--muted)]">
-                    #{note.id.slice(0, 6)}
-                  </span>
-                </div>
+                <span
+                  class="block truncate text-sm font-medium transition duration-150 {isUntitled
+                    ? 'italic text-[var(--muted)] group-hover:text-[var(--text-secondary)]'
+                    : 'text-[var(--text)]'}"
+                >
+                  {title}
+                </span>
               </div>
 
               <div class="flex items-center gap-3 shrink-0">
