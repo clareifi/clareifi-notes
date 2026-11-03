@@ -49,6 +49,52 @@ export async function vaultExists(): Promise<boolean> {
 }
 
 /**
+ * Fetch the remote vault_config row from Supabase, querying Phase 3 envelope
+ * columns (wrapped_dek, dek_iv, salt, auth_hash) first and falling back
+ * gracefully to Phase 2 columns (salt, auth_hash) if the remote table schema
+ * has not yet been migrated.
+ */
+export async function fetchRemoteVaultConfig(userId?: string): Promise<{
+  salt: string;
+  auth_hash: string;
+  wrapped_dek?: string | null;
+  dek_iv?: string | null;
+} | null> {
+  try {
+    let resolvedUserId = userId;
+    if (!resolvedUserId) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      resolvedUserId = user?.id;
+    }
+
+    let query = supabase
+      .from('vault_config')
+      .select('wrapped_dek, dek_iv, salt, auth_hash');
+    if (resolvedUserId) {
+      query = query.eq('user_id', resolvedUserId);
+    }
+    const { data, error } = await query.single();
+
+    if (!error && data) return data;
+
+    // Fallback to Phase 2 column selection if remote table hasn't added wrapped_dek / dek_iv yet
+    let legacyQuery = supabase.from('vault_config').select('salt, auth_hash');
+    if (resolvedUserId) {
+      legacyQuery = legacyQuery.eq('user_id', resolvedUserId);
+    }
+    const { data: legacyData, error: legacyErr } = await legacyQuery.single();
+
+    if (legacyErr || !legacyData) return null;
+    return legacyData;
+  } catch (err) {
+    console.warn('[storage] fetchRemoteVaultConfig failed:', err);
+    return null;
+  }
+}
+
+/**
  * Sync vault_config to Supabase with Phase 3 envelope fields (wrapped_dek, dek_iv),
  * falling back gracefully to Phase 2 columns if the remote table schema has not yet
  * been migrated.
@@ -90,20 +136,74 @@ export async function syncVaultConfigToSupabase(
 }
 
 /**
- * Ensure a vault config has a Phase 3 Envelope DEK wrapped under the user's KEK.
- * If the vault was created under Phase 2 (no wrappedDek), seamlessly generates
- * and wraps a new random AES-GCM 256-bit DEK and persists the upgraded VaultConfig.
+ * Ensure a vault config has a Phase 3 Envelope DEK wrapped under the user's KEK,
+ * enforcing centralized remote DEK synchronization across all devices:
+ *
+ * 1. Always queries `supabase.from('vault_config').select('wrapped_dek, dek_iv, salt, auth_hash')` first.
+ * 2. Case A (Remote Envelope Exists): If `wrapped_dek` and `dek_iv` exist in Supabase,
+ *    unwraps that specific DEK using the derived KEK (never generates a diverging DEK)
+ *    and saves the synchronized config into local IndexedDB.
+ * 3. Case B (Remote Envelope Missing): Only generates a fresh DEK if neither local
+ *    IndexedDB nor remote Supabase has `wrapped_dek`, then immediately wraps and
+ *    persists it both locally and to Supabase.
  */
 export async function ensureVaultEnvelope(
   config: VaultConfig,
-  kek: CryptoKey
+  kek: CryptoKey,
+  userId?: string
 ): Promise<{ config: VaultConfig; dek: CryptoKey; upgraded: boolean }> {
-  if (config.wrappedDek && config.dekIv) {
-    const dek = await unwrapDek(config.wrappedDek, config.dekIv, kek);
-    return { config, dek, upgraded: false };
+  let resolvedUserId = userId;
+  if (!resolvedUserId) {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      resolvedUserId = user?.id;
+    } catch {
+      // Offline or unauthenticated — proceed with local fallback if needed
+    }
   }
 
-  // Seamless Phase 2 -> Phase 3 upgrade
+  // Always check remote vault_config first to prevent multi-device DEK divergence
+  const remoteConfig = await fetchRemoteVaultConfig(resolvedUserId);
+
+  // Case A (Remote Envelope Exists): unwrap remote DEK and persist to local IndexedDB
+  if (remoteConfig?.wrapped_dek && remoteConfig?.dek_iv) {
+    const remoteWrappedDek = fromBase64(remoteConfig.wrapped_dek).buffer;
+    const remoteDekIv = fromBase64(remoteConfig.dek_iv);
+    const dek = await unwrapDek(remoteWrappedDek, remoteDekIv, kek);
+
+    const syncedConfig: VaultConfig = {
+      ...config,
+      version: 2,
+      salt: remoteConfig.salt ? fromBase64(remoteConfig.salt) : config.salt,
+      authHash: remoteConfig.auth_hash || config.authHash,
+      wrappedDek: remoteWrappedDek,
+      dekIv: remoteDekIv,
+      updatedAt: config.updatedAt ?? new Date().toISOString(),
+    };
+
+    await saveVaultConfig(syncedConfig);
+    return { config: syncedConfig, dek, upgraded: false };
+  }
+
+  // Remote envelope is missing, but local IndexedDB already has a wrapped DEK:
+  // unwrap the local DEK and sync it up to Supabase so secondary devices share it.
+  if (config.wrappedDek && config.dekIv) {
+    const dek = await unwrapDek(config.wrappedDek, config.dekIv, kek);
+    const syncedLocalConfig: VaultConfig = {
+      ...config,
+      version: 2,
+    };
+    await saveVaultConfig(syncedLocalConfig);
+    if (resolvedUserId) {
+      await syncVaultConfigToSupabase(resolvedUserId, syncedLocalConfig);
+    }
+    return { config: syncedLocalConfig, dek, upgraded: false };
+  }
+
+  // Case B (Remote Envelope Missing & Local Envelope Missing):
+  // Generate a fresh DEK, wrap it under KEK, and persist both locally and to Supabase.
   const extractableDek = await generateDek();
   const { wrappedDek, wrapIv: dekIv } = await wrapDek(extractableDek, kek);
   const dek = await unwrapDek(wrappedDek, dekIv, kek);
@@ -117,6 +217,9 @@ export async function ensureVaultEnvelope(
   };
 
   await saveVaultConfig(upgradedConfig);
+  if (resolvedUserId) {
+    await syncVaultConfigToSupabase(resolvedUserId, upgradedConfig);
+  }
   return { config: upgradedConfig, dek, upgraded: true };
 }
 

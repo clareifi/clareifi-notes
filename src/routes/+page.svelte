@@ -38,9 +38,9 @@
   });
 
   onMount(async () => {
-    if (session.isUnlocked && session.masterKey) {
+    const activeDek = session.dek ?? session.masterKey;
+    if (session.isUnlocked && activeDek) {
       const allNotes = await getAllNotes();
-      const masterKey = session.masterKey;
       const fallbackKek = session.kek;
 
       notesWithTitles = await Promise.all(
@@ -49,7 +49,7 @@
           let isUntitled = true;
           if (note.titleCiphertext && note.titleIv) {
             try {
-              const decrypted = await decryptNoteTitleOnly(note, masterKey, fallbackKek);
+              const decrypted = await decryptNoteTitleOnly(note, activeDek, fallbackKek);
               if (decrypted && decrypted.trim()) {
                 title = decrypted.trim();
                 isUntitled = false;

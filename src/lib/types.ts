@@ -33,6 +33,7 @@ export interface VaultConfig {
 // Lives in Svelte store only — NEVER persisted
 export interface SessionState {
   masterKey: CryptoKey | null;       // Active note key (unwrapped DEK or KEK)
+  dek?: CryptoKey | null;            // Unwrapped vault Data Encryption Key (alias for masterKey)
   kek?: CryptoKey | null;            // PBKDF2-derived Key Encryption Key (in-memory only)
   isUnlocked: boolean;
 }

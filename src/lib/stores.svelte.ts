@@ -10,6 +10,7 @@
 
 class SessionStore {
   masterKey: CryptoKey | null = $state(null);
+  dek: CryptoKey | null = $state(null);
   kek: CryptoKey | null = $state(null);
   isUnlocked: boolean = $state(false);
   envelopeActive: boolean = $state(false);
@@ -20,6 +21,7 @@ class SessionStore {
    */
   setMasterKey(key: CryptoKey, kek?: CryptoKey | null): void {
     this.masterKey = key;
+    this.dek = key;
     this.kek = kek ?? key;
     this.envelopeActive = Boolean(kek && kek !== key);
     this.isUnlocked = true;
@@ -32,6 +34,7 @@ class SessionStore {
    */
   clearSession(): void {
     this.masterKey = null;
+    this.dek = null;
     this.kek = null;
     this.envelopeActive = false;
     this.isUnlocked = false;

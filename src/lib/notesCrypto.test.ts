@@ -1,9 +1,14 @@
 /**
  * notesCrypto.test.ts — Tests for encryptNoteEnvelope and decryptNoteWithVersion.
  */
-import { describe, it, expect } from 'vitest';
-import { generateSalt, deriveKeys, encryptNote } from './crypto.js';
-import { encryptNoteEnvelope, decryptNoteWithVersion } from './notesCrypto.js';
+import { describe, it, expect, vi } from 'vitest';
+import { generateSalt, deriveKeys, encryptNote, generateDek, unwrapDek, wrapDek } from './crypto.js';
+import {
+  encryptNoteEnvelope,
+  decryptNoteWithVersion,
+  decryptNoteTitleOnly,
+  setNoteUpgradePersister,
+} from './notesCrypto.js';
 import type { EncryptedNote } from './types.js';
 
 async function makeKek(): Promise<CryptoKey> {
@@ -172,5 +177,73 @@ describe('encryptNoteEnvelope + decryptNoteWithVersion', () => {
     expect(enc.iv).not.toBe(enc.titleIv);
     // Not the same bytes
     expect(enc.iv).not.toEqual(enc.titleIv);
+  });
+
+  it('(j) falls back to KEK when DEK fails, and transparently upgrades note to DEK in background', async () => {
+    const kek = await makeKek();
+    const rawDek = await generateDek();
+    const { wrappedDek, wrapIv } = await wrapDek(rawDek, kek);
+    const dek = await unwrapDek(wrappedDek, wrapIv, kek);
+
+    const persistedNotes: EncryptedNote[] = [];
+    setNoteUpgradePersister(async (n) => {
+      persistedNotes.push(n);
+    });
+
+    // Legacy Phase 2 note encrypted directly with KEK
+    const legacyNote = await makeV1Note('legacy body', 'legacy title', kek, 1);
+
+    const { content, title } = await decryptNoteWithVersion(legacyNote, dek, kek);
+    expect(content).toBe('legacy body');
+    expect(title).toBe('legacy title');
+
+    // Wait briefly for fire-and-forget background upgrade
+    await vi.waitFor(() => {
+      expect(persistedNotes.length).toBe(1);
+    });
+
+    const upgradedNote = persistedNotes[0];
+    // Upgraded note must now decrypt directly with DEK (without needing fallback KEK)
+    const afterUpgrade = await decryptNoteWithVersion(upgradedNote, dek);
+    expect(afterUpgrade.content).toBe('legacy body');
+    expect(afterUpgrade.title).toBe('legacy title');
+
+    setNoteUpgradePersister(null);
+  });
+
+  it('(k) decryptNoteTitleOnly falls back to KEK when DEK fails', async () => {
+    const kek = await makeKek();
+    const rawDek = await generateDek();
+    const { wrappedDek, wrapIv } = await wrapDek(rawDek, kek);
+    const dek = await unwrapDek(wrappedDek, wrapIv, kek);
+
+    const persistedNotes: EncryptedNote[] = [];
+    setNoteUpgradePersister(async (n) => {
+      persistedNotes.push(n);
+    });
+
+    const legacyNote = await makeV1Note('legacy body', 'sidebar title', kek, 1);
+    const title = await decryptNoteTitleOnly(legacyNote, dek, kek);
+    expect(title).toBe('sidebar title');
+
+    await vi.waitFor(() => {
+      expect(persistedNotes.length).toBe(1);
+    });
+    setNoteUpgradePersister(null);
+  });
+
+  it('(l) throws "Unable to decrypt note" when both DEK and fallback KEK fail', async () => {
+    const realKey = await makeKek();
+    const wrongDek = await makeKek();
+    const wrongKek = await makeKek();
+
+    const note = await makeV1Note('secret content', 'secret title', realKey, 1);
+
+    await expect(decryptNoteWithVersion(note, wrongDek, wrongKek)).rejects.toThrow(
+      'Unable to decrypt note'
+    );
+    await expect(decryptNoteTitleOnly(note, wrongDek, wrongKek)).rejects.toThrow(
+      'Unable to decrypt note'
+    );
   });
 });
