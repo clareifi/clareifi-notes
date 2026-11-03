@@ -56,7 +56,8 @@
 
     try {
       note = fetched;
-      const result = await decryptNoteWithVersion(fetched, session.masterKey, session.kek);
+      const activeDek = session.dek ?? session.masterKey;
+      const result = await decryptNoteWithVersion(fetched, activeDek, session.kek);
       decrypted = result.content;
       decryptedTitle = result.title ?? '';
       editContent = decrypted;

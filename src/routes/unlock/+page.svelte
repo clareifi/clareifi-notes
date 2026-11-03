@@ -6,10 +6,11 @@
   import {
     getVaultConfig,
     saveVaultConfig,
+    fetchRemoteVaultConfig,
     ensureVaultEnvelope,
-    syncVaultConfigToSupabase,
     pullNotesFromSupabase,
     fromBase64,
+    toBase64,
   } from '$lib/storage.js';
   import { session } from '$lib/stores.svelte.js';
   import { supabase } from '$lib/supabase.js';
@@ -32,31 +33,6 @@
       isEnvelopeVault = Boolean(config.wrappedDek && config.dekIv);
     }
   });
-
-  async function fetchRemoteVaultConfig(userId: string): Promise<{
-    salt: string;
-    auth_hash: string;
-    wrapped_dek?: string | null;
-    dek_iv?: string | null;
-  } | null> {
-    const { data, error: err } = await supabase
-      .from('vault_config')
-      .select('salt, auth_hash, wrapped_dek, dek_iv')
-      .eq('user_id', userId)
-      .single();
-
-    if (!err && data) return data;
-
-    // Fallback to Phase 2 column selection if remote table hasn't added wrapped_dek / dek_iv yet
-    const { data: legacyData, error: legacyErr } = await supabase
-      .from('vault_config')
-      .select('salt, auth_hash')
-      .eq('user_id', userId)
-      .single();
-
-    if (legacyErr || !legacyData) return null;
-    return legacyData;
-  }
 
   async function unlock(e: SubmitEvent) {
     e.preventDefault();
@@ -123,10 +99,7 @@
         await saveVaultConfig(initialConfig);
 
         loadingStatus = 'unwrapping envelope key…';
-        const { config: finalConfig, dek, upgraded } = await ensureVaultEnvelope(initialConfig, kek);
-        if (upgraded) {
-          await syncVaultConfigToSupabase(signInData.user.id, finalConfig);
-        }
+        const { dek } = await ensureVaultEnvelope(initialConfig, kek, signInData.user.id);
 
         session.setMasterKey(dek, kek);
 
@@ -142,38 +115,60 @@
         return;
       }
 
-      // Local vault exists — verify against local PBKDF2 authHash
-      const { masterKey: kek, authHash } = await deriveKeys(password, config.salt);
+      // Local vault exists — establish Supabase session first (if email is known)
+      // so ensureVaultEnvelope can always fetch the canonical remote wrapped_dek
+      // before deciding whether to unwrap or upgrade.
+      const loginEmail = config.email || normalizedEmail;
+      let supabaseUserId: string | undefined;
 
-      if (authHash !== config.authHash) {
-        error = 'Incorrect vault password. Unable to unlock local vault.';
-        loading = false;
-        return;
-      }
-
-      // Seamless Phase 2 -> Phase 3 upgrade if vault doesn't have a wrapped DEK yet
-      loadingStatus = config.wrappedDek ? 'unwrapping envelope key…' : 'upgrading vault to envelope v2…';
-      const updatedBaseConfig: VaultConfig =
-        !config.email && normalizedEmail ? { ...config, email: normalizedEmail } : config;
-
-      const { config: finalConfig, dek, upgraded } = await ensureVaultEnvelope(updatedBaseConfig, kek);
-
-      // Local auth is the source of truth — unlock the session now
-      session.setMasterKey(dek, kek);
-
-      // Establish Supabase session for sync — non-blocking if it fails
-      const loginEmail = finalConfig.email || normalizedEmail;
       if (loginEmail) {
+        loadingStatus = 'authenticating device…';
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email: loginEmail,
           password,
         });
         if (signInError) {
           console.error('[unlock] Supabase sign-in failed:', signInError.message);
-        } else if (upgraded && signInData?.user?.id) {
-          await syncVaultConfigToSupabase(signInData.user.id, finalConfig);
+        } else {
+          supabaseUserId = signInData?.user?.id;
         }
       }
+
+      // Check if remote vault_config has an updated salt (e.g. rotated on another device)
+      let activeSalt = config.salt;
+      let expectedAuthHash = config.authHash;
+      if (supabaseUserId) {
+        const remoteConfig = await fetchRemoteVaultConfig(supabaseUserId);
+        if (remoteConfig?.salt && remoteConfig.salt !== toBase64(config.salt)) {
+          activeSalt = fromBase64(remoteConfig.salt);
+          if (remoteConfig.auth_hash) {
+            expectedAuthHash = remoteConfig.auth_hash;
+          }
+        }
+      }
+
+      loadingStatus = 'deriving key…';
+      const { masterKey: kek, authHash } = await deriveKeys(password, activeSalt);
+
+      if (authHash !== expectedAuthHash) {
+        error = 'Incorrect vault password. Unable to unlock local vault.';
+        loading = false;
+        return;
+      }
+
+      // Ensure centralized envelope DEK (fetches remote wrapped_dek first; only generates if missing everywhere)
+      loadingStatus = config.wrappedDek ? 'unwrapping envelope key…' : 'upgrading vault to envelope v2…';
+      const updatedBaseConfig: VaultConfig = {
+        ...config,
+        salt: activeSalt,
+        authHash,
+        email: loginEmail || config.email,
+      };
+
+      const { dek } = await ensureVaultEnvelope(updatedBaseConfig, kek, supabaseUserId);
+
+      // Unlock the session with canonical DEK and derived KEK
+      session.setMasterKey(dek, kek);
 
       // Pull notes — no-op if no active session, never blocks vault access
       loadingStatus = 'syncing encrypted notes…';

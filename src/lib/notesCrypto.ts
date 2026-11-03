@@ -18,6 +18,60 @@
 import { encryptNote, decryptNote, generateDek, wrapDek, unwrapDek } from './crypto.js';
 import type { EncryptedNote } from './types.js';
 
+type NoteUpgradePersister = (note: EncryptedNote) => Promise<void>;
+
+let customUpgradePersister: NoteUpgradePersister | null = null;
+
+/**
+ * Optional hook for tests to intercept background note upgrades without
+ * requiring IndexedDB / Supabase environment variables.
+ */
+export function setNoteUpgradePersister(persister: NoteUpgradePersister | null): void {
+  customUpgradePersister = persister;
+}
+
+/**
+ * Transparently re-encrypt a legacy KEK-encrypted note using the active vault DEK
+ * and persist the upgraded record to local IndexedDB and Supabase in the background.
+ */
+async function upgradeNoteToDekInBackground(
+  note: EncryptedNote,
+  content: string,
+  title: string | undefined,
+  dek: CryptoKey
+): Promise<void> {
+  try {
+    const trimmedTitle = title !== undefined && title !== '' ? title : undefined;
+    const [contentEnc, titleEnc, envelope] = await Promise.all([
+      encryptNote(content, dek),
+      trimmedTitle ? encryptNote(trimmedTitle, dek) : Promise.resolve(undefined),
+      encryptNoteEnvelope(content, trimmedTitle, dek),
+    ]);
+
+    const upgraded: EncryptedNote = {
+      ...note,
+      version: 1,
+      iv: contentEnc.iv,
+      ciphertext: contentEnc.ciphertext,
+      titleIv: titleEnc?.iv,
+      titleCiphertext: titleEnc?.ciphertext,
+      wrappedDek: envelope.wrappedDek,
+      wrapIv: envelope.wrapIv,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (customUpgradePersister) {
+      await customUpgradePersister(upgraded);
+      return;
+    }
+
+    const { saveNote } = await import('./storage.js');
+    await saveNote(upgraded);
+  } catch (err) {
+    console.warn('[notesCrypto] background envelope v2 upgrade skipped:', err);
+  }
+}
+
 // ── Encrypt ───────────────────────────────────────────────────────────────────
 
 /**
@@ -93,29 +147,41 @@ export async function encryptNoteEnvelope(
  */
 export async function decryptNoteWithVersion(
   note: EncryptedNote,
-  kek: CryptoKey,
+  dek: CryptoKey,
   fallbackKek?: CryptoKey | null
 ): Promise<{ content: string; title: string | undefined }> {
   const version = note.version ?? 1;
 
   if (version === 1) {
-    let activeKey = kek;
-    let content: string;
+    // 1. Attempt decryption with session.dek (or session.masterKey)
     try {
-      content = await decryptNote(note.ciphertext, note.iv, activeKey);
-    } catch (err) {
-      if (fallbackKek && fallbackKek !== kek) {
-        activeKey = fallbackKek;
-        content = await decryptNote(note.ciphertext, note.iv, activeKey);
-      } else {
-        throw err;
+      const content = await decryptNote(note.ciphertext, note.iv, dek);
+      let title: string | undefined;
+      if (note.titleCiphertext && note.titleIv) {
+        title = await decryptNote(note.titleCiphertext, note.titleIv, dek);
       }
+      return { content, title };
+    } catch (primaryErr) {
+      // 2. If an OperationError (decryption failure) occurs, immediately attempt
+      //    fallback decryption with session.kek (Phase 2 PBKDF2 password key)
+      if (fallbackKek && fallbackKek !== dek) {
+        try {
+          const content = await decryptNote(note.ciphertext, note.iv, fallbackKek);
+          let title: string | undefined;
+          if (note.titleCiphertext && note.titleIv) {
+            title = await decryptNote(note.titleCiphertext, note.titleIv, fallbackKek);
+          }
+
+          // Transparently re-encrypt with session.dek and upsert to IndexedDB & Supabase
+          void upgradeNoteToDekInBackground(note, content, title, dek);
+
+          return { content, title };
+        } catch {
+          throw new Error('Unable to decrypt note. The encryption key may not match this record.');
+        }
+      }
+      throw primaryErr;
     }
-    let title: string | undefined;
-    if (note.titleCiphertext && note.titleIv) {
-      title = await decryptNote(note.titleCiphertext, note.titleIv, activeKey);
-    }
-    return { content, title };
   }
 
   // v2 — envelope path
@@ -123,13 +189,15 @@ export async function decryptNoteWithVersion(
     throw new Error('missing wrappedDek or wrapIv for v2 note');
   }
 
-  let dek: CryptoKey;
+  let unwrappedNoteDek: CryptoKey;
+  let usedFallbackKek = false;
   try {
-    dek = await unwrapDek(note.wrappedDek, note.wrapIv, kek);
+    unwrappedNoteDek = await unwrapDek(note.wrappedDek, note.wrapIv, dek);
   } catch {
-    if (fallbackKek && fallbackKek !== kek) {
+    if (fallbackKek && fallbackKek !== dek) {
       try {
-        dek = await unwrapDek(note.wrappedDek, note.wrapIv, fallbackKek);
+        unwrappedNoteDek = await unwrapDek(note.wrappedDek, note.wrapIv, fallbackKek);
+        usedFallbackKek = true;
       } catch {
         throw new Error('unwrap failed — wrong key or corrupted wrapped DEK');
       }
@@ -138,11 +206,16 @@ export async function decryptNoteWithVersion(
     }
   }
 
-  const content = await decryptNote(note.ciphertext, note.iv, dek);
+  const content = await decryptNote(note.ciphertext, note.iv, unwrappedNoteDek);
   let title: string | undefined;
   if (note.titleCiphertext && note.titleIv) {
-    title = await decryptNote(note.titleCiphertext, note.titleIv, dek);
+    title = await decryptNote(note.titleCiphertext, note.titleIv, unwrappedNoteDek);
   }
+
+  if (usedFallbackKek) {
+    void upgradeNoteToDekInBackground(note, content, title, dek);
+  }
+
   return { content, title };
 }
 
@@ -152,7 +225,7 @@ export async function decryptNoteWithVersion(
  */
 export async function decryptNoteTitleOnly(
   note: EncryptedNote,
-  kek: CryptoKey,
+  dek: CryptoKey,
   fallbackKek?: CryptoKey | null
 ): Promise<string | undefined> {
   if (!note.titleCiphertext || !note.titleIv) return undefined;
@@ -160,12 +233,23 @@ export async function decryptNoteTitleOnly(
   const version = note.version ?? 1;
   if (version === 1) {
     try {
-      return await decryptNote(note.titleCiphertext, note.titleIv, kek);
-    } catch (err) {
-      if (fallbackKek && fallbackKek !== kek) {
-        return await decryptNote(note.titleCiphertext, note.titleIv, fallbackKek);
+      return await decryptNote(note.titleCiphertext, note.titleIv, dek);
+    } catch (primaryErr) {
+      if (fallbackKek && fallbackKek !== dek) {
+        try {
+          const title = await decryptNote(note.titleCiphertext, note.titleIv, fallbackKek);
+
+          // Transparently decrypt content with fallbackKek and upgrade the note to DEK in background
+          void decryptNote(note.ciphertext, note.iv, fallbackKek)
+            .then((content) => upgradeNoteToDekInBackground(note, content, title, dek))
+            .catch((err) => console.warn('[notesCrypto] background title upgrade skipped:', err));
+
+          return title;
+        } catch {
+          throw new Error('Unable to decrypt note. The encryption key may not match this record.');
+        }
       }
-      throw err;
+      throw primaryErr;
     }
   }
 
@@ -173,16 +257,26 @@ export async function decryptNoteTitleOnly(
     throw new Error('missing wrappedDek or wrapIv for v2 note');
   }
 
-  let dek: CryptoKey;
+  let unwrappedNoteDek: CryptoKey;
+  let usedFallbackKek = false;
   try {
-    dek = await unwrapDek(note.wrappedDek, note.wrapIv, kek);
+    unwrappedNoteDek = await unwrapDek(note.wrappedDek, note.wrapIv, dek);
   } catch {
-    if (fallbackKek && fallbackKek !== kek) {
-      dek = await unwrapDek(note.wrappedDek, note.wrapIv, fallbackKek);
+    if (fallbackKek && fallbackKek !== dek) {
+      unwrappedNoteDek = await unwrapDek(note.wrappedDek, note.wrapIv, fallbackKek);
+      usedFallbackKek = true;
     } else {
       throw new Error('unwrap failed — wrong key or corrupted wrapped DEK');
     }
   }
 
-  return decryptNote(note.titleCiphertext, note.titleIv, dek);
+  const title = await decryptNote(note.titleCiphertext, note.titleIv, unwrappedNoteDek);
+
+  if (usedFallbackKek) {
+    void decryptNote(note.ciphertext, note.iv, unwrappedNoteDek)
+      .then((content) => upgradeNoteToDekInBackground(note, content, title, dek))
+      .catch((err) => console.warn('[notesCrypto] background v2 title upgrade skipped:', err));
+  }
+
+  return title;
 }
