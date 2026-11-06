@@ -68,19 +68,8 @@
     loading = false;
   });
 
-  function formatRelativeTime(iso: string): string {
+  function formatCreatedDate(iso: string): string {
     const date = new Date(iso);
-    const now = Date.now();
-    const diffSec = Math.max(0, Math.floor((now - date.getTime()) / 1000));
-
-    if (diffSec < 45) return 'Edited just now';
-    const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `Edited ${diffMin}m ago`;
-    const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `Edited ${diffHr}h ago`;
-    const diffDay = Math.floor(diffHr / 24);
-    if (diffDay < 7) return `Edited ${diffDay}d ago`;
-
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -314,13 +303,13 @@
 
               <div class="flex items-center gap-3 shrink-0">
                 <time
-                  datetime={note.updatedAt}
-                  title={formatFullDate(note.updatedAt)}
-                  class="text-xs font-mono text-[var(--muted)] group-hover:text-[var(--text-secondary)] tabular-nums transition duration-150"
+                  datetime={note.createdAt}
+                  title={formatFullDate(note.createdAt)}
+                  class="text-xs text-neutral-400 font-mono tracking-tight tabular-nums group-hover:text-neutral-200 hover:text-neutral-200 transition duration-150"
                 >
-                  {formatRelativeTime(note.updatedAt)}
+                  {formatCreatedDate(note.createdAt)}
                 </time>
-                <span class="text-[var(--muted)] group-hover:text-emerald-400 group-hover:translate-x-0.5 transition duration-150 text-xs font-mono">
+                <span class="text-[var(--muted)] hover:text-neutral-200 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition duration-150 text-xs font-mono">
                   →
                 </span>
               </div>
