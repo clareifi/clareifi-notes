@@ -1,279 +1,330 @@
-<script>
-  const phases = [
+<script lang="ts">
+  interface Phase {
+    name: string;
+    status: 'complete' | 'in-progress';
+    milestone: string;
+    description: string;
+  }
+
+  interface NextFeature {
+    title: string;
+    description: string;
+  }
+
+  interface TechnicalHighlight {
+    label: string;
+    detail: string;
+  }
+
+  interface SocialLink {
+    label: string;
+    handle: string;
+    href: string;
+  }
+
+  const technicalHighlights: TechnicalHighlight[] = [
     {
-      name: 'Phase 1 — Local-first E2EE',
-      status: 'complete',
-      description: 'AES-256-GCM encryption, PBKDF2 key derivation, vault lock/unlock, IndexedDB storage.',
-      milestone: 'March 2026'
+      label: 'Encryption',
+      detail: 'AES-GCM 256-bit with unique 12-byte IV per note title and content.'
     },
     {
-      name: 'Phase 2 — Supabase Sync + Auth',
-      status: 'complete',
-      description: 'Email/password auth, encrypted cloud sync, Row Level Security, multi-device support.',
-      milestone: 'April 2026'
+      label: 'Key Derivation & Separation',
+      detail: 'Master Key Encryption Key (KEK) derived via PBKDF2-HMAC-SHA-256 (310,000 iterations) with a unique vault salt.'
     },
     {
-      name: 'Phase 3 — Production SaaS',
-      status: 'in-progress',
-      description: 'Envelope key architecture, public profiles, selective sharing, security audit, Stripe billing.',
-      milestone: 'Q3 2026'
+      label: 'Envelope Encryption',
+      detail: 'Dedicated Data Encryption Key (DEK) wrapped by KEK, allowing password changes and key rotation without mass re-encryption.'
+    },
+    {
+      label: 'Key Handling',
+      detail: 'Non-extractable Web Crypto API handles; memory zeroed out across tabs on lock.'
+    },
+    {
+      label: 'Dual-Layer Persistence',
+      detail: 'IndexedDB (idb-keyval) local source of truth + Supabase PostgreSQL ciphertext sync with Row Level Security (RLS).'
+    }
+  ];
+
+  const phases: Phase[] = [
+    {
+      name: 'Phase 1 — Local-First E2EE',
+      status: 'complete',
+      milestone: 'Shipped March 2026',
+      description:
+        'AES-256-GCM encryption, PBKDF2 derivation, vault lock/unlock lifecycle, encrypted titles, and IndexedDB storage.'
+    },
+    {
+      name: 'Phase 2 — Multi-Device Sync & Auth',
+      status: 'complete',
+      milestone: 'Shipped April 2026',
+      description:
+        'Supabase Auth, encrypted cloud sync, RLS data isolation, remote reconciliation, and cross-browser salt derivation.'
+    },
+    {
+      name: 'Phase 3 (Architecture) — Envelope Encryption & UI Overhaul',
+      status: 'complete',
+      milestone: 'Shipped 2026',
+      description:
+        'DEK/KEK envelope key hierarchy, background ciphertext migration, multi-tab lock broadcasting, distraction-free editor with in-memory search, and immutable creation timestamps.'
+    }
+  ];
+
+  const phase4Features: NextFeature[] = [
+    {
+      title: 'Selective Sharing',
+      description:
+        'Zero-knowledge single-note sharing via encrypted URL fragments (/s/[id]#key=...) where the secret key never touches the backend.'
+    },
+    {
+      title: 'Public Profiles',
+      description:
+        'Lightweight creator profiles (/u/[username]) for non-sensitive public metadata.'
+    },
+    {
+      title: 'External Security Audit',
+      description:
+        'Third-party cryptographic audit and penetration testing before general public availability.'
+    },
+    {
+      title: 'Mobile Enhancements',
+      description:
+        'Progressive Web App (PWA) offline packaging and dedicated native shells.'
+    }
+  ];
+
+  const techStack: string[] = [
+    'SvelteKit 2 + Svelte 5 (Runes)',
+    'TypeScript 5',
+    'Tailwind CSS 4',
+    'IndexedDB (idb-keyval) + Supabase PostgreSQL',
+    'Web Crypto API (SubtleCrypto)',
+    'Vercel Hosting'
+  ];
+
+  const socialLinks: SocialLink[] = [
+    {
+      label: 'GitHub',
+      handle: 'clareifi/clareifi-notes',
+      href: 'https://github.com/clareifi/clareifi-notes'
+    },
+    {
+      label: 'X (Twitter)',
+      handle: '@clareifi',
+      href: 'https://x.com/clareifi'
+    },
+    {
+      label: 'Bluesky',
+      handle: '@clareifi.com',
+      href: 'https://bsky.app/profile/clareifi.com'
+    },
+    {
+      label: 'Threads',
+      handle: '@clareifi',
+      href: 'https://threads.net/@clareifi'
     }
   ];
 </script>
 
 <svelte:head>
   <title>About — Clareifi Notes</title>
-  <meta name="description" content="Clareifi Notes: Privacy by architecture, not policy. End-to-end encrypted notes with zero-knowledge design." />
+  <meta
+    name="description"
+    content="Clareifi Notes: Privacy by architecture, not policy. End-to-end encrypted notes with zero-knowledge envelope key architecture."
+  />
 </svelte:head>
 
-<div class="about">
-  <header class="hero">
-    <h1>clareifi notes</h1>
-    <p class="tagline">privacy by architecture, not policy.</p>
-  </header>
+<div class="min-h-full bg-neutral-950 text-neutral-100 font-mono">
+  <div class="max-w-2xl mx-auto px-5 sm:px-6 py-12 sm:py-16 space-y-12">
+    <!-- 1. Header & Core Ethos -->
+    <header class="pb-8 border-b border-neutral-800">
+      <div class="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] text-emerald-400 mb-4">
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+        <span>Zero-Knowledge E2EE Architecture</span>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight text-neutral-100">
+        Clareifi Notes
+      </h1>
+      <p class="mt-2 text-sm text-neutral-400 italic">
+        "Privacy by architecture, not policy."
+      </p>
+    </header>
 
-  <section class="mission">
-    <h2>What I'm building</h2>
-    <p>
-      Clareifi Notes is an end-to-end encrypted notes app built on zero-knowledge architecture.
-      Your notes are encrypted before they leave your device — I never see your content, your keys,
-      or your plaintext. The server only stores ciphertext.
-    </p>
-    <p>
-      I believe privacy should be a structural guarantee, not a policy promise.
-    </p>
-  </section>
+    <!-- 2. What I'm Building -->
+    <section aria-labelledby="section-mission" class="space-y-3">
+      <h2
+        id="section-mission"
+        class="text-xs font-semibold uppercase tracking-widest text-neutral-400"
+      >
+        What I'm Building
+      </h2>
+      <div class="space-y-3 text-sm text-neutral-300 leading-relaxed font-sans">
+        <p>
+          Clareifi Notes is an end-to-end encrypted notes application built on a strict zero-knowledge model. Every note title and body is encrypted client-side in your browser before it ever leaves your device.
+        </p>
+        <p>
+          The server acts purely as a ciphertext store with zero access to your plaintext, passwords, or raw cryptographic keys. Privacy is enforced by mathematical guarantees rather than terms-of-service promises.
+        </p>
+      </div>
+    </section>
 
-  <section class="security">
-    <h2>How it works</h2>
-    <ul>
-      <li><span class="label">Encryption:</span> AES-GCM 256-bit with unique IV per note</li>
-      <li><span class="label">Key derivation:</span> PBKDF2 with 310,000 iterations + random salt</li>
-      <li><span class="label">Key handling:</span> Non-extractable CryptoKey via Web Crypto API</li>
-      <li><span class="label">Storage:</span> IndexedDB (local) + Supabase (encrypted sync)</li>
-      <li><span class="label">Access control:</span> Row Level Security — users can only access their own data</li>
-    </ul>
-  </section>
+    <!-- 3. How It Works (Technical Highlights) -->
+    <section aria-labelledby="section-security" class="space-y-4">
+      <h2
+        id="section-security"
+        class="text-xs font-semibold uppercase tracking-widest text-neutral-400"
+      >
+        How It Works
+      </h2>
+      <ul class="divide-y divide-neutral-800 rounded-xl border border-neutral-800 bg-neutral-900/40">
+        {#each technicalHighlights as item (item.label)}
+          <li class="px-4 py-3.5 text-xs sm:text-sm leading-relaxed">
+            <span class="font-semibold text-emerald-400">{item.label}:</span>
+            <span class="text-neutral-300 font-sans ml-1">{item.detail}</span>
+          </li>
+        {/each}
+      </ul>
+    </section>
 
-  <section class="roadmap">
-    <h2>Build progress</h2>
-    <div class="phases">
-      {#each phases as phase}
-        <div class="phase" class:complete={phase.status === 'complete'} class:in-progress={phase.status === 'in-progress'}>
-          <div class="phase-header">
-            <span class="phase-status">
-              {#if phase.status === 'complete'}✓{:else}→{/if}
-            </span>
-            <h3>{phase.name}</h3>
+    <!-- 4. Build Progress (Phases) -->
+    <section aria-labelledby="section-progress" class="space-y-4">
+      <h2
+        id="section-progress"
+        class="text-xs font-semibold uppercase tracking-widest text-neutral-400"
+      >
+        Build Progress
+      </h2>
+      <div class="space-y-3">
+        {#each phases as phase (phase.name)}
+          <div class="rounded-xl border border-emerald-900/50 bg-neutral-900/50 p-4 space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-emerald-400 text-sm font-bold" aria-hidden="true">✓</span>
+                <h3 class="text-xs sm:text-sm font-semibold text-neutral-100">
+                  {phase.name}
+                </h3>
+              </div>
+              <span class="text-[11px] text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-0.5">
+                {phase.milestone}
+              </span>
+            </div>
+            <p class="text-xs sm:text-sm text-neutral-400 leading-relaxed pl-5 font-sans">
+              {phase.description}
+            </p>
           </div>
-          <p class="phase-description">{phase.description}</p>
-          <span class="phase-milestone">{phase.milestone}</span>
+        {/each}
+      </div>
+    </section>
+
+    <!-- 5. What's Next (Phase 4) -->
+    <section aria-labelledby="section-next" class="space-y-4">
+      <h2
+        id="section-next"
+        class="text-xs font-semibold uppercase tracking-widest text-neutral-400"
+      >
+        What's Next
+      </h2>
+      <div class="rounded-xl border border-amber-500/30 bg-neutral-900/40 p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="text-amber-400 text-sm font-bold" aria-hidden="true">→</span>
+            <h3 class="text-xs sm:text-sm font-semibold text-neutral-100">
+              Phase 4 — Production Sharing &amp; Hardening
+            </h3>
+          </div>
+          <span class="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-0.5">
+            Upcoming Roadmap
+          </span>
         </div>
-      {/each}
-    </div>
-  </section>
 
-  <section class="stack">
-    <h2>Tech stack</h2>
-    <div class="stack-grid">
-      <span>SvelteKit 2</span>
-      <span>Svelte 5</span>
-      <span>TypeScript</span>
-      <span>Tailwind CSS 4</span>
-      <span>Supabase</span>
-      <span>Vercel</span>
-      <span>Web Crypto API</span>
-      <span>IndexedDB</span>
-    </div>
-  </section>
+        <ul class="space-y-3 pl-5">
+          {#each phase4Features as feature (feature.title)}
+            <li class="text-xs sm:text-sm leading-relaxed">
+              <span class="font-semibold text-neutral-200">{feature.title}:</span>
+              <span class="text-neutral-400 font-sans ml-1">{feature.description}</span>
+            </li>
+          {/each}
+        </ul>
+      </div>
+    </section>
 
-  <section class="connect">
-    <h2>Follow along</h2>
-    <p>Clareifi Notes is built in public. Follow the journey:</p>
-    <div class="links">
-      <a href="https://github.com/clareifi/clareifi-notes" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://bsky.app/profile/clareifi.com" target="_blank" rel="noopener">Bluesky</a>
-    </div>
-  </section>
+    <!-- 6. Tech Stack -->
+    <section aria-labelledby="section-stack" class="space-y-4">
+      <h2
+        id="section-stack"
+        class="text-xs font-semibold uppercase tracking-widest text-neutral-400"
+      >
+        Tech Stack
+      </h2>
+      <div class="flex flex-wrap gap-2">
+        {#each techStack as tech (tech)}
+          <span class="rounded-lg border border-neutral-800 bg-neutral-900/60 px-3 py-1.5 text-xs text-neutral-300">
+            {tech}
+          </span>
+        {/each}
+      </div>
+    </section>
 
-  <footer class="about-footer">
-    <p>© {new Date().getFullYear()} Clareifi. MIT License.</p>
-  </footer>
+    <!-- 7. Follow Along / Ecosystem Links -->
+    <section aria-labelledby="section-links" class="space-y-4">
+      <h2
+        id="section-links"
+        class="text-xs font-semibold uppercase tracking-widest text-neutral-400"
+      >
+        Follow Along
+      </h2>
+      <p class="text-xs sm:text-sm text-neutral-400 font-sans">
+        Clareifi Notes is built in public. Explore the source code or follow updates across the ecosystem:
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        {#each socialLinks as link (link.label)}
+          <a
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-900/40 px-3.5 py-2.5 text-xs transition duration-150 hover:border-neutral-700 hover:bg-neutral-900"
+          >
+            <span class="text-neutral-400 group-hover:text-neutral-200 transition duration-150">
+              {link.label}
+            </span>
+            <span class="text-neutral-200 group-hover:text-emerald-400 transition duration-150">
+              {link.handle} ↗
+            </span>
+          </a>
+        {/each}
+      </div>
+
+      <div class="pt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-400">
+        <span class="text-neutral-500">Web:</span>
+        <a
+          href="https://clareifi.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-neutral-300 hover:text-emerald-400 underline underline-offset-4 decoration-neutral-700 hover:decoration-emerald-400 transition duration-150"
+        >
+          clareifi.com
+        </a>
+        <span class="text-neutral-700">·</span>
+        <a
+          href="https://clareifi.xyz"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-neutral-300 hover:text-emerald-400 underline underline-offset-4 decoration-neutral-700 hover:decoration-emerald-400 transition duration-150"
+        >
+          clareifi.xyz
+        </a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="pt-8 border-t border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
+      <p>MIT © 2026 Clareifi</p>
+      <a
+        href="/"
+        class="text-neutral-400 hover:text-emerald-400 transition duration-150"
+      >
+        ← Back to Vault
+      </a>
+    </footer>
+  </div>
 </div>
-
-<style>
-  .about {
-    max-width: 640px;
-    margin: 0 auto;
-    padding: 3rem 1.5rem;
-    font-family: var(--font-mono);
-    color: var(--text);
-  }
-
-  .hero {
-    text-align: center;
-    margin-bottom: 3rem;
-    padding-bottom: 2rem;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .hero h1 {
-    font-size: 1.75rem;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    margin: 0 0 0.5rem;
-  }
-
-  .tagline {
-    color: var(--muted);
-    font-size: 0.9rem;
-    font-style: italic;
-  }
-
-  section {
-    margin-bottom: 2.5rem;
-  }
-
-  h2 {
-    font-size: 1rem;
-    font-weight: 600;
-    text-transform: lowercase;
-    color: var(--muted);
-    margin: 0 0 1rem;
-    letter-spacing: 0.05em;
-  }
-
-  p {
-    line-height: 1.7;
-    font-size: 0.875rem;
-    margin: 0 0 0.75rem;
-  }
-
-  .security ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .security li {
-    font-size: 0.825rem;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--border);
-    line-height: 1.5;
-  }
-
-  .security li:last-child {
-    border-bottom: none;
-  }
-
-  .label {
-    color: var(--muted);
-  }
-
-  .phases {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .phase {
-    padding: 1rem;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--surface);
-  }
-
-  .phase.complete {
-    border-color: #2d4a2d;
-  }
-
-  .phase.in-progress {
-    border-color: #4a4a2d;
-  }
-
-  .phase-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .phase-status {
-    font-size: 0.875rem;
-    width: 1.25rem;
-    flex-shrink: 0;
-  }
-
-  .complete .phase-status {
-    color: #4ade80;
-  }
-
-  .in-progress .phase-status {
-    color: #facc15;
-  }
-
-  h3 {
-    font-size: 0.875rem;
-    font-weight: 600;
-    margin: 0;
-  }
-
-  .phase-description {
-    font-size: 0.8rem;
-    color: var(--muted);
-    margin: 0 0 0.5rem;
-    padding-left: 1.75rem;
-  }
-
-  .phase-milestone {
-    font-size: 0.75rem;
-    color: var(--muted);
-    padding-left: 1.75rem;
-  }
-
-  .stack-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .stack-grid span {
-    font-size: 0.75rem;
-    padding: 0.35rem 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--surface);
-    color: var(--muted);
-  }
-
-  .connect .links {
-    display: flex;
-    gap: 1.5rem;
-    margin-top: 0.75rem;
-  }
-
-  .connect a {
-    font-size: 0.825rem;
-    color: var(--text);
-    text-decoration: none;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 2px;
-    transition: border-color 0.2s;
-  }
-
-  .connect a:hover {
-    border-color: var(--text);
-  }
-
-  .about-footer {
-    margin-top: 3rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border);
-    text-align: center;
-  }
-
-  .about-footer p {
-    font-size: 0.75rem;
-    color: var(--muted);
-  }
-</style>
