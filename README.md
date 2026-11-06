@@ -84,7 +84,7 @@ Follow the development journey:
 
 - 🦋 Bluesky: [@clareifi.com](https://bsky.app/profile/clareifi.com)
 - 🧵 Threads: [@clareifi](https://threads.net/@clareifi)
-
+- 𝕏  Twitter:[@clareifi] (https://clareifi.xyz/about?ref=clareifi.com)
 ---
 
 ## License
