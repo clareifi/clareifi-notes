@@ -226,21 +226,28 @@ export async function ensureVaultEnvelope(
 // ── Notes ─────────────────────────────────────────────────────────────────────
 
 export async function saveNote(note: EncryptedNote): Promise<void> {
-  await set(`${NOTE_PREFIX}${note.id}`, note);
+  const existing = await get<EncryptedNote>(`${NOTE_PREFIX}${note.id}`);
+  const createdAt = existing?.createdAt || (note.createdAt ? note.createdAt : new Date().toISOString());
+  const noteToSave: EncryptedNote = {
+    ...note,
+    createdAt,
+  };
+
+  await set(`${NOTE_PREFIX}${noteToSave.id}`, noteToSave);
 
   // Sync to Supabase after local write succeeds — failures are non-blocking
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const basePayload = {
-        id: note.id,
+        id: noteToSave.id,
         user_id: user.id,
-        ciphertext: toBase64(note.ciphertext),
-        iv: toBase64(note.iv),
-        title_ciphertext: note.titleCiphertext ? toBase64(note.titleCiphertext) : null,
-        title_iv: note.titleIv ? toBase64(note.titleIv) : null,
-        created_at: note.createdAt,
-        updated_at: note.updatedAt,
+        ciphertext: toBase64(noteToSave.ciphertext),
+        iv: toBase64(noteToSave.iv),
+        title_ciphertext: noteToSave.titleCiphertext ? toBase64(noteToSave.titleCiphertext) : null,
+        title_iv: noteToSave.titleIv ? toBase64(noteToSave.titleIv) : null,
+        created_at: noteToSave.createdAt,
+        updated_at: noteToSave.updatedAt,
       };
 
       const { error } = await supabase.from('notes').upsert(basePayload);
@@ -302,7 +309,7 @@ export async function pullNotesFromSupabase(): Promise<number> {
       ciphertext: ciphertextBytes.buffer,
       titleIv: row.title_iv ? fromBase64(row.title_iv) : undefined,
       titleCiphertext: titleCiphertextBytes ? titleCiphertextBytes.buffer : undefined,
-      createdAt: row.created_at,
+      createdAt: existing?.createdAt || row.created_at,
       updatedAt: row.updated_at,
     };
     await set(`${NOTE_PREFIX}${row.id}`, pulledNote);

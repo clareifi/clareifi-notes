@@ -57,7 +57,8 @@ async function upgradeNoteToDekInBackground(
       titleCiphertext: titleEnc?.ciphertext,
       wrappedDek: envelope.wrappedDek,
       wrapIv: envelope.wrapIv,
-      updatedAt: new Date().toISOString(),
+      createdAt: note.createdAt,
+      updatedAt: note.updatedAt,
     };
 
     if (customUpgradePersister) {

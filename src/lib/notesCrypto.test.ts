@@ -192,6 +192,8 @@ describe('encryptNoteEnvelope + decryptNoteWithVersion', () => {
 
     // Legacy Phase 2 note encrypted directly with KEK
     const legacyNote = await makeV1Note('legacy body', 'legacy title', kek, 1);
+    legacyNote.createdAt = '2025-07-30T10:00:00.000Z';
+    legacyNote.updatedAt = '2025-08-08T12:00:00.000Z';
 
     const { content, title } = await decryptNoteWithVersion(legacyNote, dek, kek);
     expect(content).toBe('legacy body');
@@ -203,6 +205,8 @@ describe('encryptNoteEnvelope + decryptNoteWithVersion', () => {
     });
 
     const upgradedNote = persistedNotes[0];
+    expect(upgradedNote.createdAt).toBe('2025-07-30T10:00:00.000Z');
+    expect(upgradedNote.updatedAt).toBe('2025-08-08T12:00:00.000Z');
     // Upgraded note must now decrypt directly with DEK (without needing fallback KEK)
     const afterUpgrade = await decryptNoteWithVersion(upgradedNote, dek);
     expect(afterUpgrade.content).toBe('legacy body');
