@@ -14,7 +14,7 @@ A zero-knowledge encrypted notes app. Your vault is unlocked with a password-der
 
 ---
 
-## Current Status — Phase 2 Complete (April 2026)
+## Current Status — Phase 3 Architecture Complete (November 2026)
 
 ### Phase 1 — Local-first E2EE ✅
 
@@ -24,21 +24,28 @@ A zero-knowledge encrypted notes app. Your vault is unlocked with a password-der
 - Encrypted note titles
 - Setup → Unlock → Create → Edit → Delete note flow
 
-### Phase 2 — Supabase Sync + Auth ✅
+### Phase 2 — Multi-device Sync + Auth ✅
 
 - Email/password authentication via Supabase Auth
 - Zero-knowledge sync — server stores only ciphertext
 - Salt-based key derivation (unique per vault)
-- Multi-device support (tested across 6 browsers on 2 devices)
+- Multi-device support and remote note reconciliation
 - Vault config + notes schema with row-level security
 
-### Phase 3 — Production SaaS (Planned)
+### Phase 3 — Envelope Encryption + UI Overhaul ✅
 
-- Key rotation with envelope key architecture
-- Public profile pages
+- DEK/KEK envelope key hierarchy for password changes and key rotation
+- Background migration of existing ciphertext to the envelope-key architecture
+- Multi-tab vault-lock broadcasting
+- Distraction-free editor with in-memory search
+- Immutable note creation timestamps
+
+### Phase 4 — Production Sharing + Hardening (Planned)
+
 - Selective sharing with encrypted links
-- External security audit
-- Mobile apps
+- Public profile pages
+- External cryptographic security audit and penetration testing
+- Mobile enhancements, including PWA offline support and native shells
 
 ---
 
@@ -65,7 +72,7 @@ All encryption happens client-side. The server stores only ciphertext.
 - Auth verification uses a cryptographically independent hash (salt variant)
 - Zero-knowledge sync — Supabase never sees plaintext
 
-> Phase 2 learning project. Not recommended for sensitive data until a formal security audit is completed.
+> The external security audit is still planned for Phase 4. Do not rely on the app for highly sensitive data until an independent audit has been completed.
 >
 > Security issues: security@clareifi.com
 
